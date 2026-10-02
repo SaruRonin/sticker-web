@@ -195,17 +195,15 @@ const LABEL_PRESETS = {
 };
 
 // Given a sticker size and gap (all in pt) plus a page size, figures out how
-// many columns/rows fit on the page and the margins needed to center that
-// grid on the page (rather than stretching stickers to fill it edge-to-edge,
-// which would misalign them with physical die-cut labels).
+// many columns/rows fit on the page. The grid is anchored flush to the
+// top-left corner (marginX = marginY = 0) rather than centered, matching
+// physical die-cut label sheets that print with zero margin starting right
+// at the edge of the page; any leftover space (if the sticker size/count
+// doesn't divide the page evenly) is simply left unused at the bottom/right.
 function computeGrid(stickerW, stickerH, gapX, gapY, pageW, pageH) {
   const cols = Math.max(0, Math.floor((pageW + gapX + 1e-6) / (stickerW + gapX)));
   const rows = Math.max(0, Math.floor((pageH + gapY + 1e-6) / (stickerH + gapY)));
-  const gridW = cols * stickerW + Math.max(0, cols - 1) * gapX;
-  const gridH = rows * stickerH + Math.max(0, rows - 1) * gapY;
-  const marginX = (pageW - gridW) / 2;
-  const marginY = (pageH - gridH) / 2;
-  return { cols, rows, marginX, marginY };
+  return { cols, rows, marginX: 0, marginY: 0 };
 }
 
 // Standard custom font: only a Bold weight is available, so it's used for
