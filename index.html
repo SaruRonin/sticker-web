@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lot Sticker Sheet Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+  :root { color-scheme: light; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    max-width: 640px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+    color: #1a1a1a;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+  p.sub { color: #555; margin-top: 0; }
+  .drop {
+    border: 2px dashed #bbb;
+    border-radius: 10px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    margin: 1.5rem 0;
+  }
+  .drop.dragover { border-color: #2563eb; background: #eff6ff; }
+  .drop p { margin: 0.25rem 0; }
+  .drop input { display: none; }
+  button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:disabled { background: #93b4ef; cursor: not-allowed; }
+  #status { margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em; }
+  #status.error { color: #b91c1c; }
+  #status.ok { color: #15803d; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: 0.85rem; }
+  th, td { border: 1px solid #ddd; padding: 0.3rem 0.5rem; text-align: left; }
+  th { background: #f5f5f5; }
+  .fields { font-size: 0.85rem; color: #555; margin-top: 1.5rem; }
+  .fields code { background: #f5f5f5; padding: 0.1rem 0.3rem; border-radius: 4px; }
+  .settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: flex-end;
+    margin: 1rem 0 1.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border: 1px solid #eee;
+    border-radius: 8px;
+  }
+  .settings label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+    color: #444;
+    gap: 0.3rem;
+  }
+  .settings select, .settings input[type="number"] {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 7rem;
+  }
+  .settings input[type="number"]:disabled {
+    background: #f0f0f0;
+    color: #888;
+  }
+  .actions { display: flex; gap: 0.6rem; align-items: center; }
+  button.secondary { background: #fff; color: #2563eb; border: 1px solid #2563eb; }
+  #warnings {
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    display: none;
+  }
+  #warnings.warn {
+    display: block;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  #warnings ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+  #previewContainer { margin-top: 1.5rem; display: none; }
+  #previewContainer iframe {
+    width: 100%;
+    height: 70vh;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Lot Sticker Sheet Generator</h1>
+<p class="sub">Upload a CSV of coffee lots. Each row becomes its own A4 page, filled edge-to-edge with as many identical stickers as fit the size below.</p>
+
+<div class="drop" id="drop">
+  <p><strong>Click to choose a CSV file</strong> or drag it here</p>
+  <p style="font-size:0.85rem;color:#888;">.csv only</p>
+  <input type="file" id="fileInput" accept=".csv,text/csv">
+</div>
+
+<div class="settings">
+  <label>
+    Font
+    <select id="fontFamily">
+      <option value="restora" selected>RestoraNeue (standard)</option>
+      <option value="times">Times New Roman</option>
+      <option value="helvetica">Helvetica</option>
+      <option value="courier">Courier</option>
+    </select>
+  </label>
+  <label>
+    Title size (pt)
+    <input type="number" id="titleSize" value="12" min="4" max="24" step="0.5">
+  </label>
+  <label>
+    Body size (pt)
+    <input type="number" id="bodySize" value="9" min="4" max="24" step="0.5">
+  </label>
+  <label>
+    Label sheet
+    <select id="labelPreset">
+      <option value="lu-a4-21" selected>LU-A4-21 (70 &times; 42.3mm, no gap) — standard</option>
+      <option value="custom">Custom size</option>
+    </select>
+  </label>
+  <label>
+    Sticker width (mm)
+    <input type="number" id="stickerWidth" value="70" min="5" max="210" step="0.1">
+  </label>
+  <label>
+    Sticker height (mm)
+    <input type="number" id="stickerHeight" value="42.3" min="5" max="297" step="0.1">
+  </label>
+  <label>
+    Gap X (mm)
+    <input type="number" id="gapX" value="0" min="0" max="50" step="0.1">
+  </label>
+  <label>
+    Gap Y (mm)
+    <input type="number" id="gapY" value="0" min="0" max="50" step="0.1">
+  </label>
+</div>
+
+<div class="actions">
+  <button id="generateBtn" disabled>Generate PDF</button>
+  <button id="previewBtn" class="secondary" disabled>Preview PDF</button>
+</div>
+<div id="status"></div>
+<div id="warnings"></div>
+
+<div id="preview"></div>
+
+<div id="previewContainer">
+  <iframe id="previewFrame" title="PDF preview"></iframe>
+</div>
+
+<div class="fields">
+  <strong>Recognized columns</strong> (case-insensitive, any order; missing/blank fields are skipped per sticker):<br>
+  <code>Code</code> (or ID / Lot / Lot Code / Lot ID / SKU),
+  <code>Name</code> (or Lot Name / Title),
+  <code>Country</code>, <code>Region</code>, <code>Variety</code>,
+  <code>Processing</code>, <code>Producer</code> (or Farm Name / Farm / Farmer / Grower), <code>Altitude</code>.
+</div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+const PT_PER_CM = 28.3465;
+const PT_PER_MM = PT_PER_CM / 10;
+const PAD = 0.25 * PT_PER_CM;
+const LINE_GAP = 1.15;
+const TITLE_BODY_GAP = 0.15 * PT_PER_CM; // extra space between title and property lines
+
+const A4_W_PT = 210 * PT_PER_MM;
+const A4_H_PT = 297 * PT_PER_MM;
+
+// Standard label sheet: "LU-A4-21" - 70 x 42.3mm, no gap, 3x7 (21/page).
+// This is the default/locked preset; pick "Custom size" to override it.
+const LABEL_PRESETS = {
+  "lu-a4-21": { widthMm: 70, heightMm: 42.3, gapXMm: 0, gapYMm: 0 },
+};
+
+// Given a sticker size and gap (all in pt) plus a page size, figures out how
+// many columns/rows fit on the page and the margins needed to center that
+// grid on the page (rather than stretching stickers to fill it edge-to-edge,
+// which would misalign them with physical die-cut labels).
+function computeGrid(stickerW, stickerH, gapX, gapY, pageW, pageH) {
+  const cols = Math.max(0, Math.floor((pageW + gapX + 1e-6) / (stickerW + gapX)));
+  const rows = Math.max(0, Math.floor((pageH + gapY + 1e-6) / (stickerH + gapY)));
+  const gridW = cols * stickerW + Math.max(0, cols - 1) * gapX;
+  const gridH = rows * stickerH + Math.max(0, rows - 1) * gapY;
+  const marginX = (pageW - gridW) / 2;
+  const marginY = (pageH - gridH) / 2;
+  return { cols, rows, marginX, marginY };
+}
+
+// Standard custom font: only a Bold weight is available, so it's used for
+// both title and body text. Loaded lazily (once) as base64 and registered
+// into each new jsPDF document, since jsPDF's VFS/font registry is per-doc.
+const CUSTOM_FONT_FILE = "fonts/RestoraNeue-Bold.ttf";
+const CUSTOM_FONT_FAMILY = "RestoraNeue";
+let customFontBase64 = null;
+let customFontLoadPromise = null;
+
+function loadCustomFont() {
+  if (!customFontLoadPromise) {
+    customFontLoadPromise = fetch(CUSTOM_FONT_FILE)
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`Failed to load ${CUSTOM_FONT_FILE} (${resp.status})`);
+        return resp.arrayBuffer();
+      })
+      .then((buf) => {
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        customFontBase64 = btoa(binary);
+        return customFontBase64;
+      });
+  }
+  return customFontLoadPromise;
+}
+
+// Registers the custom font on one jsPDF document instance (must be
+// repeated per-document). Returns the font family name actually usable
+// for doc.setFont(...) - falls back to Times New Roman if loading failed.
+async function ensureFont(doc, fontFamily) {
+  if (fontFamily !== "restora") return fontFamily;
+  try {
+    await loadCustomFont();
+  } catch (err) {
+    console.warn(err);
+    return "times";
+  }
+  doc.addFileToVFS(CUSTOM_FONT_FILE, customFontBase64);
+  doc.addFont(CUSTOM_FONT_FILE, CUSTOM_FONT_FAMILY, "normal");
+  doc.addFont(CUSTOM_FONT_FILE, CUSTOM_FONT_FAMILY, "bold");
+  return CUSTOM_FONT_FAMILY;
+}
+
+function gridFromOptions(options) {
+  const stickerW = options.stickerWidthMm * PT_PER_MM;
+  const stickerH = options.stickerHeightMm * PT_PER_MM;
+  const gapX = options.gapXMm * PT_PER_MM;
+  const gapY = options.gapYMm * PT_PER_MM;
+  return computeGrid(stickerW, stickerH, gapX, gapY, A4_W_PT, A4_H_PT);
+}
+
+// ISO 3166-1 alpha-2 country codes -> English short name
+const COUNTRY_CODES = {
+  AD: "Andorra", AE: "United Arab Emirates", AF: "Afghanistan", AG: "Antigua and Barbuda",
+  AI: "Anguilla", AL: "Albania", AM: "Armenia", AO: "Angola", AQ: "Antarctica",
+  AR: "Argentina", AS: "American Samoa", AT: "Austria", AU: "Australia", AW: "Aruba",
+  AX: "Åland Islands", AZ: "Azerbaijan", BA: "Bosnia and Herzegovina", BB: "Barbados",
+  BD: "Bangladesh", BE: "Belgium", BF: "Burkina Faso", BG: "Bulgaria", BH: "Bahrain",
+  BI: "Burundi", BJ: "Benin", BL: "Saint Barthélemy", BM: "Bermuda", BN: "Brunei",
+  BO: "Bolivia", BQ: "Bonaire, Sint Eustatius and Saba", BR: "Brazil", BS: "Bahamas",
+  BT: "Bhutan", BV: "Bouvet Island", BW: "Botswana", BY: "Belarus", BZ: "Belize",
+  CA: "Canada", CC: "Cocos (Keeling) Islands", CD: "DR Congo", CF: "Central African Republic",
+  CG: "Congo", CH: "Switzerland", CI: "Côte d'Ivoire", CK: "Cook Islands", CL: "Chile",
+  CM: "Cameroon", CN: "China", CO: "Colombia", CR: "Costa Rica", CU: "Cuba",
+  CV: "Cabo Verde", CW: "Curaçao", CX: "Christmas Island", CY: "Cyprus", CZ: "Czechia",
+  DE: "Germany", DJ: "Djibouti", DK: "Denmark", DM: "Dominica", DO: "Dominican Republic",
+  DZ: "Algeria", EC: "Ecuador", EE: "Estonia", EG: "Egypt", EH: "Western Sahara",
+  ER: "Eritrea", ES: "Spain", ET: "Ethiopia", FI: "Finland", FJ: "Fiji",
+  FK: "Falkland Islands", FM: "Micronesia", FO: "Faroe Islands", FR: "France",
+  GA: "Gabon", GB: "United Kingdom", GD: "Grenada", GE: "Georgia", GF: "French Guiana",
+  GG: "Guernsey", GH: "Ghana", GI: "Gibraltar", GL: "Greenland", GM: "Gambia",
+  GN: "Guinea", GP: "Guadeloupe", GQ: "Equatorial Guinea", GR: "Greece",
+  GS: "South Georgia and the South Sandwich Islands", GT: "Guatemala", GU: "Guam",
+  GW: "Guinea-Bissau", GY: "Guyana", HK: "Hong Kong",
+  HM: "Heard Island and McDonald Islands", HN: "Honduras", HR: "Croatia", HT: "Haiti",
+  HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel", IM: "Isle of Man",
+  IN: "India", IO: "British Indian Ocean Territory", IQ: "Iraq", IR: "Iran",
+  IS: "Iceland", IT: "Italy", JE: "Jersey", JM: "Jamaica", JO: "Jordan", JP: "Japan",
+  KE: "Kenya", KG: "Kyrgyzstan", KH: "Cambodia", KI: "Kiribati", KM: "Comoros",
+  KN: "Saint Kitts and Nevis", KP: "North Korea", KR: "South Korea", KW: "Kuwait",
+  KY: "Cayman Islands", KZ: "Kazakhstan", LA: "Laos", LB: "Lebanon", LC: "Saint Lucia",
+  LI: "Liechtenstein", LK: "Sri Lanka", LR: "Liberia", LS: "Lesotho", LT: "Lithuania",
+  LU: "Luxembourg", LV: "Latvia", LY: "Libya", MA: "Morocco", MC: "Monaco",
+  MD: "Moldova", ME: "Montenegro", MF: "Saint Martin", MG: "Madagascar",
+  MH: "Marshall Islands", MK: "North Macedonia", ML: "Mali", MM: "Myanmar",
+  MN: "Mongolia", MO: "Macao", MP: "Northern Mariana Islands", MQ: "Martinique",
+  MR: "Mauritania", MS: "Montserrat", MT: "Malta", MU: "Mauritius", MV: "Maldives",
+  MW: "Malawi", MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NA: "Namibia",
+  NC: "New Caledonia", NE: "Niger", NF: "Norfolk Island", NG: "Nigeria",
+  NI: "Nicaragua", NL: "Netherlands", NO: "Norway", NP: "Nepal", NR: "Nauru",
+  NU: "Niue", NZ: "New Zealand", OM: "Oman", PA: "Panama", PE: "Peru",
+  PF: "French Polynesia", PG: "Papua New Guinea", PH: "Philippines", PK: "Pakistan",
+  PL: "Poland", PM: "Saint Pierre and Miquelon", PN: "Pitcairn", PR: "Puerto Rico",
+  PS: "Palestine", PT: "Portugal", PW: "Palau", PY: "Paraguay", QA: "Qatar",
+  RE: "Réunion", RO: "Romania", RS: "Serbia", RU: "Russia", RW: "Rwanda",
+  SA: "Saudi Arabia", SB: "Solomon Islands", SC: "Seychelles", SD: "Sudan",
+  SE: "Sweden", SG: "Singapore", SH: "Saint Helena", SI: "Slovenia",
+  SJ: "Svalbard and Jan Mayen", SK: "Slovakia", SL: "Sierra Leone", SM: "San Marino",
+  SN: "Senegal", SO: "Somalia", SR: "Suriname", SS: "South Sudan",
+  ST: "São Tomé and Príncipe", SV: "El Salvador", SX: "Sint Maarten", SY: "Syria",
+  SZ: "Eswatini", TC: "Turks and Caicos Islands", TD: "Chad",
+  TF: "French Southern Territories", TG: "Togo", TH: "Thailand", TJ: "Tajikistan",
+  TK: "Tokelau", TL: "Timor-Leste", TM: "Turkmenistan", TN: "Tunisia", TO: "Tonga",
+  TR: "Turkey", TT: "Trinidad and Tobago", TV: "Tuvalu", TW: "Taiwan",
+  TZ: "Tanzania", UA: "Ukraine", UG: "Uganda", UM: "United States Minor Outlying Islands",
+  US: "United States", UY: "Uruguay", UZ: "Uzbekistan", VA: "Vatican City",
+  VC: "Saint Vincent and the Grenadines", VE: "Venezuela", VG: "British Virgin Islands",
+  VI: "United States Virgin Islands", VN: "Vietnam", VU: "Vanuatu",
+  WF: "Wallis and Futuna", WS: "Samoa", YE: "Yemen", YT: "Mayotte",
+  ZA: "South Africa", ZM: "Zambia", ZW: "Zimbabwe",
+};
+
+function resolveCountry(value) {
+  const code = value.trim().toUpperCase();
+  return COUNTRY_CODES[code] || value;
+}
+
+// Fallback: derive the country from the letters before the first dash in
+// the lot Code (e.g. "BI" in "BI-2026-201"), used only when there's no
+// explicit, non-blank Country value for that row.
+function countryFromCode(code) {
+  const prefix = code.split("-")[0].trim().toUpperCase();
+  return COUNTRY_CODES[prefix] || "";
+}
+
+const FIELD_ALIASES = {
+  code: ["code", "id", "lot", "lot code", "lot id", "sku"],
+  name: ["name", "lot name", "title"],
+  Country: ["country"],
+  Region: ["region"],
+  Variety: ["variety", "varieties"],
+  Processing: ["processing", "process"],
+  Producer: ["producer", "farmer", "grower", "farm name", "farm"],
+  Altitude: ["altitude", "elevation"],
+};
+
+function matchColumns(fieldnames) {
+  const lowerMap = {};
+  fieldnames.forEach(fn => { lowerMap[fn.trim().toLowerCase()] = fn; });
+  const resolved = {};
+  for (const [key, aliases] of Object.entries(FIELD_ALIASES)) {
+    for (const alias of aliases) {
+      if (alias in lowerMap) { resolved[key] = lowerMap[alias]; break; }
+    }
+  }
+  return resolved;
+}
+
+function buildLines(row, columns, titleSize, bodySize) {
+  const lines = [];
+  const code = columns.code ? (row[columns.code] || "").trim() : "";
+  const name = columns.name ? (row[columns.name] || "").trim() : "";
+  if (code) lines.push({ text: code, bold: true, size: titleSize });
+  if (name) lines.push({ text: name, bold: true, size: titleSize });
+
+  for (const label of ["Country", "Region", "Variety", "Processing", "Producer", "Altitude"]) {
+    let value = columns[label] ? (row[columns[label]] || "").trim() : "";
+    if (label === "Country") {
+      value = value ? resolveCountry(value) : countryFromCode(code);
+    }
+    if (!value) continue;
+    lines.push({ text: `${label}: ${value}`, bold: false, size: bodySize });
+  }
+  return lines;
+}
+
+// Lays out a sticker's lines within (0,0)-(stickerW,stickerH) without
+// drawing anything, so it can be reused both for actually rendering a
+// sticker and for checking ahead of time whether everything will fit.
+// Returns the positioned lines plus whether any content had to be cut.
+function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize) {
+  const maxWidth = stickerW - 2 * PAD;
+  let cursorY = PAD + titleSize * 0.8;
+  const bottomLimit = stickerH - PAD;
+  const placed = [];
+  let overflow = false;
+  let cutText = null;
+  let prevBold = null;
+
+  for (const { text, bold, size } of lines) {
+    if (prevBold === true && bold === false) cursorY += TITLE_BODY_GAP;
+    prevBold = bold;
+    doc.setFont(fontFamily, bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    const wrapped = doc.splitTextToSize(text, maxWidth);
+    for (const wline of wrapped) {
+      if (cursorY > bottomLimit) {
+        overflow = true;
+        if (cutText === null) cutText = text;
+        break;
+      }
+      placed.push({ text: wline, size, bold, y: cursorY });
+      cursorY += size * LINE_GAP;
+    }
+    if (overflow) break;
+  }
+  return { placed, overflow, cutText };
+}
+
+function drawSticker(doc, x, yTop, placed, fontFamily) {
+  for (const p of placed) {
+    doc.setFont(fontFamily, p.bold ? "bold" : "normal");
+    doc.setFontSize(p.size);
+    doc.text(p.text, x + PAD, yTop + p.y);
+  }
+}
+
+// Cheap check (no pages created) of whether every lot's content fits in a
+// single sticker cell at the given font/size settings.
+async function checkFit(rows, columns, options) {
+  const { fontFamily, titleSize, bodySize, stickerWidthMm, stickerHeightMm } = options;
+  const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
+  const resolvedFamily = await ensureFont(doc, fontFamily);
+  const stickerW = stickerWidthMm * PT_PER_MM;
+  const stickerH = stickerHeightMm * PT_PER_MM;
+
+  return rows.map((row) => {
+    const code = columns.code ? (row[columns.code] || "").trim() : "";
+    const name = columns.name ? (row[columns.name] || "").trim() : "";
+    const lines = buildLines(row, columns, titleSize, bodySize);
+    const { overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
+    return { code, name, overflow, cutText };
+  });
+}
+
+async function savePdf(doc) {
+  if ("showSaveFilePicker" in window) {
+    let handle;
+    try {
+      handle = await window.showSaveFilePicker({
+        suggestedName: "stickers.pdf",
+        types: [{ description: "PDF file", accept: { "application/pdf": [".pdf"] } }],
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return; // user cancelled the dialog
+      throw err;
+    }
+    const writable = await handle.createWritable();
+    await writable.write(doc.output("blob"));
+    await writable.close();
+  } else {
+    // Fallback for browsers without the File System Access API (e.g. Firefox, Safari)
+    doc.save("stickers.pdf");
+  }
+}
+
+// Builds the full PDF and returns it along with a report of any lots whose
+// content didn't fully fit in their sticker cell.
+async function buildDoc(rows, columns, options) {
+  const { fontFamily, titleSize, bodySize, stickerWidthMm, stickerHeightMm, gapXMm, gapYMm } = options;
+  const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
+  const resolvedFamily = await ensureFont(doc, fontFamily);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const stickerW = stickerWidthMm * PT_PER_MM;
+  const stickerH = stickerHeightMm * PT_PER_MM;
+  const gapX = gapXMm * PT_PER_MM;
+  const gapY = gapYMm * PT_PER_MM;
+  const { cols, rows: gridRows, marginX, marginY } = computeGrid(stickerW, stickerH, gapX, gapY, pageW, pageH);
+  if (cols < 1 || gridRows < 1) {
+    throw new Error(`Sticker size ${stickerWidthMm}×${stickerHeightMm}mm (with gaps) is too large to fit on an A4 page.`);
+  }
+  const perPage = cols * gridRows;
+  const overflowReport = [];
+
+  rows.forEach((row, idx) => {
+    if (idx > 0) doc.addPage();
+    const code = columns.code ? (row[columns.code] || "").trim() : "";
+    const name = columns.name ? (row[columns.name] || "").trim() : "";
+    const lines = buildLines(row, columns, titleSize, bodySize);
+    const { placed, overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
+
+    for (let i = 0; i < perPage; i++) {
+      const col = i % cols;
+      const r = Math.floor(i / cols);
+      const x = marginX + col * (stickerW + gapX);
+      const yTop = marginY + r * (stickerH + gapY);
+      drawSticker(doc, x, yTop, placed, resolvedFamily);
+    }
+
+    if (overflow) overflowReport.push({ code, name, cutText, overflow: true });
+  });
+
+  return { doc, overflowReport, cols, rows: gridRows };
+}
+
+const dropEl = document.getElementById("drop");
+const fileInput = document.getElementById("fileInput");
+const generateBtn = document.getElementById("generateBtn");
+const previewBtn = document.getElementById("previewBtn");
+const statusEl = document.getElementById("status");
+const previewEl = document.getElementById("preview");
+const warningsEl = document.getElementById("warnings");
+const previewContainer = document.getElementById("previewContainer");
+const previewFrame = document.getElementById("previewFrame");
+
+let parsedRows = null;
+let parsedColumns = null;
+
+function setStatus(msg, kind) {
+  statusEl.textContent = msg;
+  statusEl.className = kind || "";
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getOptions() {
+  return {
+    fontFamily: document.getElementById("fontFamily").value,
+    titleSize: parseFloat(document.getElementById("titleSize").value) || 12,
+    bodySize: parseFloat(document.getElementById("bodySize").value) || 9,
+    stickerWidthMm: parseFloat(document.getElementById("stickerWidth").value) || 70,
+    stickerHeightMm: parseFloat(document.getElementById("stickerHeight").value) || 42.3,
+    gapXMm: parseFloat(document.getElementById("gapX").value) || 0,
+    gapYMm: parseFloat(document.getElementById("gapY").value) || 0,
+  };
+}
+
+function renderFitWarnings(report) {
+  const overflowing = report.filter((r) => r.overflow);
+  if (!overflowing.length) {
+    warningsEl.innerHTML = "";
+    warningsEl.className = "";
+    return;
+  }
+  const items = overflowing
+    .map((r) => {
+      const label = r.code || r.name || "(unlabeled row)";
+      return `<li><strong>${escapeHtml(label)}</strong> — cut off at: "${escapeHtml(r.cutText)}"</li>`;
+    })
+    .join("");
+  warningsEl.innerHTML =
+    `<strong>${overflowing.length} lot(s) won't fully fit</strong> at this font/size — some text will be cut off:` +
+    `<ul>${items}</ul>` +
+    `Try a smaller font size, or use Preview to check before generating.`;
+  warningsEl.className = "warn";
+}
+
+async function runFitCheck() {
+  if (!parsedRows) return;
+  const options = getOptions();
+  const grid = gridFromOptions(options);
+  if (grid.cols < 1 || grid.rows < 1) {
+    setStatus("Sticker size (with gaps) is too large to fit on an A4 page — reduce the width/height or gaps.", "error");
+    generateBtn.disabled = true;
+    previewBtn.disabled = true;
+    warningsEl.innerHTML = "";
+    warningsEl.className = "";
+    return;
+  }
+  generateBtn.disabled = false;
+  previewBtn.disabled = false;
+  setStatus(
+    `Loaded ${parsedRows.length} lot(s) → ${parsedRows.length} page(s), ` +
+      `${parsedRows.length * grid.cols * grid.rows} stickers total (${grid.cols}×${grid.rows} grid).`,
+    "ok"
+  );
+  renderFitWarnings(await checkFit(parsedRows, parsedColumns, options));
+}
+
+["fontFamily", "titleSize", "bodySize", "stickerWidth", "stickerHeight", "gapX", "gapY"].forEach((id) => {
+  document.getElementById(id).addEventListener("input", runFitCheck);
+});
+
+// Applying a named preset fills in and locks the size/gap fields so they
+// can't drift from the standard; "Custom size" unlocks them for editing.
+function applyLabelPreset(presetId) {
+  const widthEl = document.getElementById("stickerWidth");
+  const heightEl = document.getElementById("stickerHeight");
+  const gapXEl = document.getElementById("gapX");
+  const gapYEl = document.getElementById("gapY");
+  const preset = LABEL_PRESETS[presetId];
+
+  [widthEl, heightEl, gapXEl, gapYEl].forEach((el) => { el.disabled = !!preset; });
+  if (preset) {
+    widthEl.value = preset.widthMm;
+    heightEl.value = preset.heightMm;
+    gapXEl.value = preset.gapXMm;
+    gapYEl.value = preset.gapYMm;
+  }
+  runFitCheck();
+}
+
+document.getElementById("labelPreset").addEventListener("change", (e) => applyLabelPreset(e.target.value));
+applyLabelPreset(document.getElementById("labelPreset").value);
+
+function handleFile(file) {
+  if (!file) return;
+  setStatus("Parsing " + file.name + "...");
+  generateBtn.disabled = true;
+  previewBtn.disabled = true;
+  previewEl.innerHTML = "";
+  warningsEl.innerHTML = "";
+  warningsEl.className = "";
+  previewContainer.style.display = "none";
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      const fatalErrors = (results.errors || []).filter(
+        (e) => e.code !== "UndetectableDelimiter"
+      );
+      if (fatalErrors.length) {
+        setStatus("CSV parse error: " + fatalErrors[0].message, "error");
+        return;
+      }
+      const fieldnames = results.meta.fields || [];
+      if (!fieldnames.length) {
+        setStatus("CSV has no header row.", "error");
+        return;
+      }
+      const columns = matchColumns(fieldnames);
+      const rows = results.data;
+      if (!rows.length) {
+        setStatus("CSV has no data rows.", "error");
+        return;
+      }
+
+      parsedRows = rows;
+      parsedColumns = columns;
+      runFitCheck();
+
+      const recognized = Object.keys(columns);
+      const unrecognized = fieldnames.filter(f => !Object.values(columns).includes(f));
+      let html = "<table><tr><th>Recognized field</th><th>CSV column</th></tr>";
+      recognized.forEach(k => { html += `<tr><td>${k}</td><td>${columns[k]}</td></tr>`; });
+      html += "</table>";
+      if (unrecognized.length) {
+        html += `<p style="font-size:0.85rem;color:#b45309;margin-top:0.5rem;">Ignored columns (no match): ${unrecognized.join(", ")}</p>`;
+      }
+      previewEl.innerHTML = html;
+    },
+    error: (err) => {
+      setStatus("Failed to read file: " + err.message, "error");
+    },
+  });
+}
+
+dropEl.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+["dragenter", "dragover"].forEach(evt =>
+  dropEl.addEventListener(evt, (e) => { e.preventDefault(); dropEl.classList.add("dragover"); })
+);
+["dragleave", "drop"].forEach(evt =>
+  dropEl.addEventListener(evt, (e) => { e.preventDefault(); dropEl.classList.remove("dragover"); })
+);
+dropEl.addEventListener("drop", (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+previewBtn.addEventListener("click", async () => {
+  if (!parsedRows) return;
+  try {
+    const { doc, overflowReport } = await buildDoc(parsedRows, parsedColumns, getOptions());
+    renderFitWarnings(overflowReport);
+    previewFrame.src = doc.output("bloburl");
+    previewContainer.style.display = "block";
+    previewContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus("Preview generated.", "ok");
+  } catch (err) {
+    setStatus("Error generating preview: " + err.message, "error");
+  }
+});
+
+generateBtn.addEventListener("click", async () => {
+  if (!parsedRows) return;
+  try {
+    const { doc, overflowReport } = await buildDoc(parsedRows, parsedColumns, getOptions());
+    renderFitWarnings(overflowReport);
+    await savePdf(doc);
+    setStatus(
+      overflowReport.length
+        ? `PDF saved — but ${overflowReport.length} lot(s) had text cut off, see warning above.`
+        : "PDF saved.",
+      overflowReport.length ? "error" : "ok"
+    );
+  } catch (err) {
+    setStatus("Error generating PDF: " + err.message, "error");
+  }
+});
+</script>
+
+</body>
+</html>
