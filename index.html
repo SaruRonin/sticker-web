@@ -390,6 +390,11 @@ function buildLines(row, columns, titleSize, bodySize) {
 // drawing anything, so it can be reused both for actually rendering a
 // sticker and for checking ahead of time whether everything will fit.
 // Returns the positioned lines plus whether any content had to be cut.
+// Rough descender allowance: text is positioned by baseline (y), but glyphs
+// like "g"/"y"/"p" extend below it. Without this, a line could be accepted
+// right at the bottom pad and then visually print past the sticker's edge.
+const DESCENDER_RATIO = 0.25;
+
 function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize) {
   const maxWidth = stickerW - 2 * PAD;
   let cursorY = PAD + titleSize * 0.8;
@@ -406,7 +411,7 @@ function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize) {
     doc.setFontSize(size);
     const wrapped = doc.splitTextToSize(text, maxWidth);
     for (const wline of wrapped) {
-      if (cursorY > bottomLimit) {
+      if (cursorY + size * DESCENDER_RATIO > bottomLimit) {
         overflow = true;
         if (cutText === null) cutText = text;
         break;
