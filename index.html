@@ -182,6 +182,11 @@ const { jsPDF } = window.jspdf;
 const PT_PER_CM = 28.3465;
 const PT_PER_MM = PT_PER_CM / 10;
 const PAD = 0.25 * PT_PER_CM;
+// Slightly more breathing room on the top/left than the default PAD gives;
+// right/bottom stay at PAD so the fit-check math (which assumes symmetric
+// right/bottom limits) doesn't need to change.
+const PAD_TOP = PAD + 1.5 * PT_PER_MM;
+const PAD_LEFT = PAD + 1.5 * PT_PER_MM;
 const LINE_GAP = 1.15;
 const TITLE_BODY_GAP = 0.15 * PT_PER_CM; // extra space between title and property lines
 
@@ -394,8 +399,8 @@ function buildLines(row, columns, titleSize, bodySize) {
 const DESCENDER_RATIO = 0.25;
 
 function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize) {
-  const maxWidth = stickerW - 2 * PAD;
-  let cursorY = PAD + titleSize * 0.8;
+  const maxWidth = stickerW - PAD_LEFT - PAD;
+  let cursorY = PAD_TOP + titleSize * 0.8;
   const bottomLimit = stickerH - PAD;
   const placed = [];
   let overflow = false;
@@ -426,7 +431,7 @@ function drawSticker(doc, x, yTop, placed, fontFamily) {
   for (const p of placed) {
     doc.setFont(fontFamily, p.bold ? "bold" : "normal");
     doc.setFontSize(p.size);
-    doc.text(p.text, x + PAD, yTop + p.y);
+    doc.text(p.text, x + PAD_LEFT, yTop + p.y);
   }
 }
 
