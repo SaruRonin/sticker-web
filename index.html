@@ -172,7 +172,7 @@
   <strong>Recognized columns</strong> (case-insensitive, any order; missing/blank fields are skipped per sticker):<br>
   <code>Code</code> (or ID / Lot / Lot Code / Lot ID / SKU),
   <code>Name</code> (or Lot Name / Title),
-  <code>Country</code>, <code>Region</code>, <code>Variety</code>,
+  <code>Country</code> (or Origin), <code>Region</code>, <code>Variety</code>,
   <code>Processing</code>, <code>Producer</code> (or Farm Name / Farm / Farmer / Grower), <code>Altitude</code>.
 </div>
 
@@ -336,7 +336,7 @@ function countryFromCode(code) {
 const FIELD_ALIASES = {
   code: ["code", "id", "lot", "lot code", "lot id", "sku"],
   name: ["name", "lot name", "title"],
-  Country: ["country"],
+  Country: ["country", "origin"],
   Region: ["region"],
   Variety: ["variety", "varieties"],
   Processing: ["processing", "process"],
