@@ -356,15 +356,27 @@ function matchColumns(fieldnames) {
   return resolved;
 }
 
+// Treats a value as "blank" if it has no letters or digits at all, e.g. "-",
+// "--", "—", "n/a"-style punctuation-only placeholders some CSVs use for
+// empty cells.
+function hasContent(value) {
+  return /[\p{L}\p{N}]/u.test(value);
+}
+
+function cleanField(raw) {
+  const value = (raw || "").trim();
+  return hasContent(value) ? value : "";
+}
+
 function buildLines(row, columns, titleSize, bodySize) {
   const lines = [];
-  const code = columns.code ? (row[columns.code] || "").trim() : "";
-  const name = columns.name ? (row[columns.name] || "").trim() : "";
+  const code = columns.code ? cleanField(row[columns.code]) : "";
+  const name = columns.name ? cleanField(row[columns.name]) : "";
   if (code) lines.push({ text: code, bold: true, size: titleSize });
   if (name) lines.push({ text: name, bold: true, size: titleSize });
 
   for (const label of ["Country", "Region", "Variety", "Processing", "Producer", "Altitude"]) {
-    let value = columns[label] ? (row[columns[label]] || "").trim() : "";
+    let value = columns[label] ? cleanField(row[columns[label]]) : "";
     if (label === "Country") {
       value = value ? resolveCountry(value) : countryFromCode(code);
     }
@@ -425,8 +437,8 @@ async function checkFit(rows, columns, options) {
   const stickerH = stickerHeightMm * PT_PER_MM;
 
   return rows.map((row) => {
-    const code = columns.code ? (row[columns.code] || "").trim() : "";
-    const name = columns.name ? (row[columns.name] || "").trim() : "";
+    const code = columns.code ? cleanField(row[columns.code]) : "";
+    const name = columns.name ? cleanField(row[columns.name]) : "";
     const lines = buildLines(row, columns, titleSize, bodySize);
     const { overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
     return { code, name, overflow, cutText };
@@ -475,8 +487,8 @@ async function buildDoc(rows, columns, options) {
 
   rows.forEach((row, idx) => {
     if (idx > 0) doc.addPage();
-    const code = columns.code ? (row[columns.code] || "").trim() : "";
-    const name = columns.name ? (row[columns.name] || "").trim() : "";
+    const code = columns.code ? cleanField(row[columns.code]) : "";
+    const name = columns.name ? cleanField(row[columns.name]) : "";
     const lines = buildLines(row, columns, titleSize, bodySize);
     const { placed, overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
 
