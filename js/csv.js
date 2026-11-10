@@ -12,13 +12,27 @@ const FIELD_ALIASES = {
   Altitude: ["altitude", "elevation"],
 };
 
+// Drops a trailing unit/qualifier in parentheses, e.g. "Altitude (masl)" ->
+// "altitude", "Altitude (m)" -> "altitude", so headers that include units
+// still match the plain alias.
+function stripParenthetical(header) {
+  return header.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
 function matchColumns(fieldnames) {
   const lowerMap = {};
-  fieldnames.forEach(fn => { lowerMap[fn.trim().toLowerCase()] = fn; });
+  const strippedMap = {};
+  fieldnames.forEach(fn => {
+    const lower = fn.trim().toLowerCase();
+    lowerMap[lower] = fn;
+    const stripped = stripParenthetical(lower);
+    if (stripped !== lower) strippedMap[stripped] = fn;
+  });
   const resolved = {};
   for (const [key, aliases] of Object.entries(FIELD_ALIASES)) {
     for (const alias of aliases) {
       if (alias in lowerMap) { resolved[key] = lowerMap[alias]; break; }
+      if (alias in strippedMap) { resolved[key] = strippedMap[alias]; break; }
     }
   }
   return resolved;
