@@ -34,6 +34,11 @@ Object.assign(UI_TEXT.ja, { pdfCancelled:"PDFの保存をキャンセルしま�
 Object.assign(UI_TEXT.ko, { pdfCancelled:"PDF 저장을 취소했습니다.", stickerAvailable:"사용 가능", stickerUsed:"사용됨" });
 Object.assign(UI_TEXT.es, { pdfCancelled:"Se canceló el guardado del PDF.", stickerAvailable:"disponible", stickerUsed:"usada" });
 Object.assign(UI_TEXT.pt, { pdfCancelled:"O salvamento do PDF foi cancelado.", stickerAvailable:"disponível", stickerUsed:"usada" });
+Object.assign(UI_TEXT.en, { showColumnHelp:"Show recognized columns", hideColumnHelp:"Close recognized columns" });
+Object.assign(UI_TEXT.ja, { showColumnHelp:"認識される列を表示", hideColumnHelp:"認識される列を閉じる" });
+Object.assign(UI_TEXT.ko, { showColumnHelp:"인식되는 열 보기", hideColumnHelp:"인식되는 열 닫기" });
+Object.assign(UI_TEXT.es, { showColumnHelp:"Mostrar columnas reconocidas", hideColumnHelp:"Cerrar columnas reconocidas" });
+Object.assign(UI_TEXT.pt, { showColumnHelp:"Mostrar colunas reconhecidas", hideColumnHelp:"Fechar colunas reconhecidas" });
 const savedUiLanguage = localStorage.getItem("stickerUiLanguage");
 let uiLanguage = UI_TEXT[savedUiLanguage] ? savedUiLanguage : "en";
 function tr(key) { return (UI_TEXT[uiLanguage] && UI_TEXT[uiLanguage][key]) || UI_TEXT.en[key] || key; }
@@ -49,6 +54,7 @@ function applyLanguage() {
   document.getElementById("languageSelect").setAttribute("aria-label", tr("language"));
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = tr(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = tr(el.dataset.i18nTitle); });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => { el.setAttribute("aria-label", tr(el.dataset.i18nAria)); });
   document.getElementById("languageSelect").value = uiLanguage;
   const lotValidation = document.getElementById("lotModalValidation");
   if (lotValidation && lotValidation.style.display !== "none") setLotModalValidation(true);
@@ -70,6 +76,26 @@ document.getElementById("languageSelect").addEventListener("change", e => {
 });
 
 const dropEl = document.getElementById("drop");
+const columnHelp = document.getElementById("columnHelp");
+const columnHelpSummary = columnHelp.querySelector("summary");
+function updateColumnHelpToggle() {
+  const key = columnHelp.open ? "hideColumnHelp" : "showColumnHelp";
+  columnHelpSummary.querySelector("span").textContent = columnHelp.open ? "×" : "?";
+  columnHelpSummary.dataset.i18nAria = key;
+  columnHelpSummary.dataset.i18nTitle = key;
+  columnHelpSummary.setAttribute("aria-label", tr(key));
+  columnHelpSummary.title = tr(key);
+}
+columnHelp.addEventListener("toggle", updateColumnHelpToggle);
+updateColumnHelpToggle();
+document.addEventListener("pointerdown", (event) => {
+  if (columnHelp.open && !columnHelp.contains(event.target)) columnHelp.open = false;
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !columnHelp.open) return;
+  columnHelp.open = false;
+  columnHelp.querySelector("summary").focus();
+});
 const fileInput = document.getElementById("fileInput");
 const generateBtn = document.getElementById("generateBtn");
 const previewBtn = document.getElementById("previewBtn");
@@ -458,16 +484,16 @@ const lotModalOverlay = document.getElementById("lotModalOverlay");
 const lotModalTable = document.getElementById("lotModalTable");
 
 function renderLotModalTable() {
-  let html = "<tr>" + LOT_FIELD_LABELS.map(([, label]) => `<th>${tr(label)}</th>`).join("") + `<th>${tr("remove")}</th></tr>`;
+  let html = `<tr class="lot-editor-header">${LOT_FIELD_LABELS.map(([, label]) => `<th>${tr(label)}</th>`).join("") + `<th>${tr("remove")}</th>`}</tr>`;
   parsedRows.forEach((row, idx) => {
-    html += "<tr>" + LOT_FIELD_LABELS.map(([field]) =>
-      `<td><input type="text" class="lotField" data-idx="${idx}" data-field="${field}" value="${escapeAttr(row[field] || "")}"></td>`
+    html += `<tr class="lot-editor-row">` + LOT_FIELD_LABELS.map(([field, label]) =>
+      `<td><label class="lot-field-editor"><span class="lot-field-name">${tr(label)}</span><input type="text" class="lotField" data-idx="${idx}" data-field="${field}" value="${escapeAttr(row[field] || "")}"></label></td>`
     ).join("");
     html += `<td><button type="button" class="removeLotBtn" data-idx="${idx}">${tr("remove")}</button></td></tr>`;
   });
   if (pendingLotDraft) {
-    html += "<tr>" + LOT_FIELD_LABELS.map(([field]) =>
-      `<td><input type="text" class="lotField" data-draft="true" data-field="${field}" value="${escapeAttr(pendingLotDraft[field] || "")}"></td>`
+    html += `<tr class="lot-editor-row draft">` + LOT_FIELD_LABELS.map(([field, label]) =>
+      `<td><label class="lot-field-editor"><span class="lot-field-name">${tr(label)}</span><input type="text" class="lotField" data-draft="true" data-field="${field}" value="${escapeAttr(pendingLotDraft[field] || "")}"></label></td>`
     ).join("");
     html += `<td><button type="button" class="removeLotBtn" data-idx="draft">${tr("remove")}</button></td></tr>`;
   }

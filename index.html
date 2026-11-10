@@ -4,20 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Saru's Sticker Generator</title>
-<link rel="stylesheet" href="css/styles.css?v=5">
+<link rel="stylesheet" href="css/styles.css?v=9">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
-
-<div class="corner-badge">
-  <strong data-i18n="recognizedColumns">Recognized columns</strong>
-  <span data-i18n="columnHelp">Case-insensitive, any order; missing/blank fields are skipped per sticker.</span><br>
-  <code>Code</code> (or ID / Lot / Lot Code / Lot ID / SKU),
-  <code>Name</code> (or Lot Name / Title),
-  <code>Country</code> (or Origin), <code>Region</code>, <code>Variety</code>,
-  <code>Processing</code>, <code>Producer</code> (or Farm Name / Farm / Farmer / Grower), <code>Altitude</code>.
-</div>
 
 <div class="card">
 
@@ -34,10 +25,25 @@
 <h1 data-i18n="appTitle">Saru's Sticker Generator</h1>
 <p class="sub" id="subText" data-i18n="subtitle">Upload a CSV of Coffee Lots. Choose your Sticker type and sticker away!</p>
 
-<div class="drop" id="drop" role="button" tabindex="0" aria-labelledby="dropPrompt">
-  <p id="dropPrompt"><strong data-i18n="chooseCsv">Click to choose a CSV file</strong> <span data-i18n="orDrag">or drag it here</span></p>
-  <p style="font-size:0.85rem;color:#a996c4;" data-i18n="csvOnly">.csv only</p>
-  <input type="file" id="fileInput" accept=".csv,text/csv">
+<div class="drop-wrap">
+  <div class="drop" id="drop" role="button" tabindex="0" aria-labelledby="dropPrompt">
+    <p id="dropPrompt"><strong data-i18n="chooseCsv">Click to choose a CSV file</strong> <span data-i18n="orDrag">or drag it here</span></p>
+    <p style="font-size:0.85rem;color:#a996c4;" data-i18n="csvOnly">.csv only</p>
+    <input type="file" id="fileInput" accept=".csv,text/csv">
+  </div>
+  <details class="column-help" id="columnHelp">
+    <summary aria-label="Show recognized columns" title="Show recognized columns" data-i18n-aria="showColumnHelp" data-i18n-title="showColumnHelp"><span aria-hidden="true">?</span></summary>
+    <div class="column-help-popover">
+      <strong data-i18n="recognizedColumns">Recognized columns</strong>
+      <p data-i18n="columnHelp">Case-insensitive, any order; missing/blank fields are skipped per sticker.</p>
+      <div class="column-help-examples">
+        <code>Code</code> (or ID / Lot / Lot Code / Lot ID / SKU),
+        <code>Name</code> (or Lot Name / Title),
+        <code>Country</code> (or Origin), <code>Region</code>, <code>Variety</code>,
+        <code>Processing</code>, <code>Producer</code> (or Farm Name / Farm / Farmer / Grower), <code>Altitude</code>.
+      </div>
+    </div>
+  </details>
 </div>
 
 <div class="actions" style="margin-top:-0.5rem;margin-bottom:1rem;">
@@ -166,7 +172,7 @@
 <script src="js/layout.js"></script>
 <script src="js/fonts.js"></script>
 <script src="js/pdf.js"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/app.js?v=9"></script>
 
 </body>
 </html>
