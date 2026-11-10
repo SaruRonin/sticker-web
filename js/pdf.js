@@ -51,15 +51,17 @@ async function savePdf(doc) {
         types: [{ description: "PDF file", accept: { "application/pdf": [".pdf"] } }],
       });
     } catch (err) {
-      if (err.name === "AbortError") return; // user cancelled the dialog
+      if (err.name === "AbortError") return false; // user cancelled the dialog
       throw err;
     }
     const writable = await handle.createWritable();
     await writable.write(doc.output("blob"));
     await writable.close();
+    return true;
   } else {
     // Fallback for browsers without the File System Access API (e.g. Firefox, Safari)
     doc.save("stickers.pdf");
+    return true;
   }
 }
 

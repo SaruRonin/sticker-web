@@ -52,6 +52,7 @@ p.sub { color: var(--text-muted); margin-top: 0; text-align: center; }
   color: var(--text-light);
 }
 .drop.dragover { border-color: var(--gold-bright); background: rgba(244, 196, 48, 0.08); }
+.drop:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
 .drop p { margin: 0.25rem 0; }
 .drop input { display: none; }
 .mode-toggle {
@@ -269,6 +270,8 @@ button.secondary:hover:not(:disabled) { background: rgba(109, 40, 217, 0.2); }
   --sticker-ratio: 1;
 }
 .pickerCell {
+  padding: 0;
+  font: inherit;
   aspect-ratio: var(--sticker-ratio, 1);
   min-width: 22px;
   display: flex;
@@ -282,6 +285,7 @@ button.secondary:hover:not(:disabled) { background: rgba(109, 40, 217, 0.2); }
   cursor: pointer;
   user-select: none;
 }
+.pickerCell:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 .pickerCell:hover { border-color: var(--gold-bright); }
 .pickerCell.used {
   background: rgba(255, 255, 255, 0.04);

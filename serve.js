@@ -17,9 +17,18 @@ const MIME = {
 
 http
   .createServer((req, res) => {
-    const urlPath = decodeURIComponent(req.url.split("?")[0]);
-    const filePath = path.join(ROOT, urlPath === "/" ? "/index.html" : urlPath);
-    if (!filePath.startsWith(ROOT)) {
+    let urlPath;
+    try {
+      urlPath = decodeURIComponent(req.url.split("?")[0]);
+    } catch {
+      res.writeHead(400);
+      res.end("Bad request");
+      return;
+    }
+    const relativePath = urlPath === "/" ? "index.html" : `.${urlPath}`;
+    const filePath = path.resolve(ROOT, relativePath);
+    const pathFromRoot = path.relative(ROOT, filePath);
+    if (pathFromRoot === ".." || pathFromRoot.startsWith(`..${path.sep}`) || path.isAbsolute(pathFromRoot)) {
       res.writeHead(403);
       res.end("Forbidden");
       return;

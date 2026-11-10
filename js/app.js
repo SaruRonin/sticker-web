@@ -29,6 +29,11 @@ Object.assign(UI_TEXT.ja, { emptyLotMessage:"空のロットをすべて入力�
 Object.assign(UI_TEXT.ko, { emptyLotMessage:"PDF를 만들기 전에 속성이 비어 있는 로트를 모두 입력하거나 삭제하세요.", csvEmptyLots:"CSV에 속성이 비어 있는 로트가 있습니다. 내용을 입력하거나 해당 행을 삭제한 뒤 다시 시도하세요." });
 Object.assign(UI_TEXT.es, { emptyLotMessage:"Completa o elimina todos los lotes vacíos antes de generar el PDF.", csvEmptyLots:"El CSV contiene uno o más lotes sin propiedades. Complétalos o elimina esas filas e inténtalo de nuevo." });
 Object.assign(UI_TEXT.pt, { emptyLotMessage:"Preencha ou remova todos os lotes vazios antes de gerar o PDF.", csvEmptyLots:"O CSV contém um ou mais lotes sem propriedades. Preencha-os ou remova essas linhas e tente novamente." });
+Object.assign(UI_TEXT.en, { pdfCancelled:"PDF save cancelled.", stickerAvailable:"available", stickerUsed:"used" });
+Object.assign(UI_TEXT.ja, { pdfCancelled:"PDFの保存をキャンセルしました。", stickerAvailable:"使用可能", stickerUsed:"使用済み" });
+Object.assign(UI_TEXT.ko, { pdfCancelled:"PDF 저장을 취소했습니다.", stickerAvailable:"사용 가능", stickerUsed:"사용됨" });
+Object.assign(UI_TEXT.es, { pdfCancelled:"Se canceló el guardado del PDF.", stickerAvailable:"disponible", stickerUsed:"usada" });
+Object.assign(UI_TEXT.pt, { pdfCancelled:"O salvamento do PDF foi cancelado.", stickerAvailable:"disponível", stickerUsed:"usada" });
 const savedUiLanguage = localStorage.getItem("stickerUiLanguage");
 let uiLanguage = UI_TEXT[savedUiLanguage] ? savedUiLanguage : "en";
 function tr(key) { return (UI_TEXT[uiLanguage] && UI_TEXT[uiLanguage][key]) || UI_TEXT.en[key] || key; }
@@ -49,6 +54,13 @@ function applyLanguage() {
   if (lotValidation && lotValidation.style.display !== "none") setLotModalValidation(true);
   renderQuantityTable();
   if (parsedRows) renderLotModalTable();
+  const picker = document.getElementById("cellPickerModalOverlay");
+  if (picker && picker.style.display !== "none") {
+    const focusedCell = document.activeElement.closest?.(".pickerCell");
+    const focusedIndex = focusedCell?.dataset.idx;
+    renderCellPickerGrid();
+    if (focusedIndex !== undefined) document.querySelector(`#cellPickerGrid [data-idx="${focusedIndex}"]`)?.focus();
+  }
   if (parsedRows) runFitCheck();
 }
 document.getElementById("languageSelect").addEventListener("change", e => {
@@ -80,6 +92,44 @@ let usedCells = [];
 let cellPickerCols = 0;
 let cellPickerRows = 0;
 let cellPickerRatio = 1; // current sticker width/height, so picker cells look like the real stickers
+let fitCheckRevision = 0;
+let fitCheckTimer = null;
+let activeModal = null;
+let modalReturnFocus = null;
+
+function scheduleFitCheck() {
+  fitCheckRevision++;
+  clearTimeout(fitCheckTimer);
+  fitCheckTimer = setTimeout(runFitCheck, 120);
+}
+
+function setActiveModal(modal, initialFocus) {
+  activeModal = modal;
+  modalReturnFocus = document.activeElement;
+  initialFocus.focus();
+}
+
+function restoreModalFocus() {
+  activeModal = null;
+  if (modalReturnFocus && modalReturnFocus.isConnected) modalReturnFocus.focus();
+  modalReturnFocus = null;
+}
+
+document.addEventListener("keydown", (event) => {
+  if (!activeModal) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    if (activeModal.id === "lotModalOverlay") closeLotModal();
+    else closeCellPickerModal();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...activeModal.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex="0"]')];
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 
 function currentMode() {
   return outputModeValue;
@@ -159,6 +209,9 @@ function renderFitWarnings(report) {
 }
 
 async function runFitCheck() {
+  clearTimeout(fitCheckTimer);
+  fitCheckTimer = null;
+  const revision = ++fitCheckRevision;
   if (!parsedRows) return;
   const options = getOptions();
 
@@ -190,7 +243,8 @@ async function runFitCheck() {
         : tr("setQuantity"),
       totalLabels > 0 ? "ok" : "error"
     );
-    renderFitWarnings(await checkFitLabel(parsedRows, options));
+    const report = await checkFitLabel(parsedRows, options);
+    if (revision === fitCheckRevision) renderFitWarnings(report);
     return;
   }
 
@@ -218,11 +272,12 @@ async function runFitCheck() {
       : tr("setQuantity"),
     totalStickers > 0 ? "ok" : "error"
   );
-  renderFitWarnings(await checkFit(parsedRows, options));
+  const report = await checkFit(parsedRows, options);
+  if (revision === fitCheckRevision) renderFitWarnings(report);
 }
 
 ["fontFamily", "titleSize", "bodySize", "stickerWidth", "stickerHeight", "gapX", "gapY"].forEach((id) => {
-  document.getElementById(id).addEventListener("input", runFitCheck);
+  document.getElementById(id).addEventListener("input", scheduleFitCheck);
 });
 
 // Applying a named preset fills in and locks the size/gap fields so they
@@ -286,14 +341,14 @@ document.getElementById("quantityTable").addEventListener("click", (e) => {
   quantities[idx] = Math.max(0, (quantities[idx] ?? 1) + delta);
   const input = document.querySelector(`#quantityTable .qtyInput[data-idx="${idx}"]`);
   if (input) input.value = quantities[idx];
-  runFitCheck();
+  scheduleFitCheck();
 });
 
 document.getElementById("quantityTable").addEventListener("input", (e) => {
   if (!e.target.classList.contains("qtyInput")) return;
   const idx = parseInt(e.target.dataset.idx, 10);
   quantities[idx] = Math.max(0, parseInt(e.target.value, 10) || 0);
-  runFitCheck();
+  scheduleFitCheck();
 });
 
 // Sticker Saver: the "reuse a partially-used sheet" cell picker (sheet
@@ -312,7 +367,7 @@ function renderCellPickerGrid() {
   grid.style.setProperty("--sticker-ratio", cellPickerRatio);
   let html = "";
   usedCells.forEach((used, i) => {
-    html += `<div class="pickerCell${used ? " used" : ""}" data-idx="${i}">${i + 1}</div>`;
+    html += `<button type="button" class="pickerCell${used ? " used" : ""}" data-idx="${i}" aria-pressed="${used}" aria-label="${i + 1}, ${tr(used ? "stickerUsed" : "stickerAvailable")}">${i + 1}</button>`;
   });
   grid.innerHTML = html;
 }
@@ -336,10 +391,12 @@ function openCellPickerModal() {
   syncCellPicker();
   renderCellPickerGrid();
   cellPickerModalOverlay.style.display = "flex";
+  setActiveModal(cellPickerModalOverlay, document.getElementById("cellPickerGrid").querySelector("button") || document.getElementById("closeCellPickerModalBtn"));
 }
 
 function closeCellPickerModal() {
   cellPickerModalOverlay.style.display = "none";
+  restoreModalFocus();
   runFitCheck();
 }
 
@@ -361,18 +418,31 @@ document.getElementById("cellPickerGrid").addEventListener("click", (e) => {
   const idx = parseInt(cell.dataset.idx, 10);
   usedCells[idx] = !usedCells[idx];
   cell.classList.toggle("used", usedCells[idx]);
+  cell.setAttribute("aria-pressed", String(usedCells[idx]));
+  cell.setAttribute("aria-label", `${idx + 1}, ${tr(usedCells[idx] ? "stickerUsed" : "stickerAvailable")}`);
   runFitCheck();
+});
+
+document.getElementById("cellPickerGrid").addEventListener("keydown", (e) => {
+  if (!["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(e.key)) return;
+  const cells = [...document.querySelectorAll("#cellPickerGrid .pickerCell")];
+  const index = cells.indexOf(e.target);
+  if (index < 0) return;
+  const delta = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "ArrowDown" ? cellPickerCols : -cellPickerCols;
+  if (cells[index + delta]) { e.preventDefault(); cells[index + delta].focus(); }
 });
 
 document.getElementById("markAllUsedBtn").addEventListener("click", () => {
   usedCells = usedCells.map(() => true);
   renderCellPickerGrid();
+  document.getElementById("markAllUsedBtn").focus();
   runFitCheck();
 });
 
 document.getElementById("markAllAvailableBtn").addEventListener("click", () => {
   usedCells = usedCells.map(() => false);
   renderCellPickerGrid();
+  document.getElementById("markAllAvailableBtn").focus();
   runFitCheck();
 });
 
@@ -412,6 +482,7 @@ function openLotModal() {
   renderLotModalTable();
   setLotModalValidation(hasIncompleteLots());
   lotModalOverlay.style.display = "flex";
+  setActiveModal(lotModalOverlay, lotModalTable.querySelector("input") || document.getElementById("closeLotModalBtn"));
 }
 
 function closeLotModal() {
@@ -423,6 +494,7 @@ function closeLotModal() {
   }
   setLotModalValidation(false);
   lotModalOverlay.style.display = "none";
+  restoreModalFocus();
 }
 
 document.getElementById("editLotsBtn").addEventListener("click", openLotModal);
@@ -591,10 +663,10 @@ function handleFile(file) {
       const unrecognized = fieldnames.filter(f => !Object.values(columns).includes(f));
       let html = `<table><tr><th>${tr("recognizedField")}</th><th>${tr("csvColumn")}</th></tr>`;
       const fieldKeys = { code:"code", name:"name", Country:"country", Region:"region", Variety:"variety", Processing:"processing", Producer:"producer", Altitude:"altitude" };
-      recognized.forEach(k => { html += `<tr><td>${tr(fieldKeys[k] || k)}</td><td>${columns[k]}</td></tr>`; });
+      recognized.forEach(k => { html += `<tr><td>${tr(fieldKeys[k] || k)}</td><td>${escapeHtml(columns[k])}</td></tr>`; });
       html += "</table>";
       if (unrecognized.length) {
-        html += `<p style="font-size:0.85rem;color:#fcd34d;margin-top:0.5rem;">${tr("ignoredColumns")}${unrecognized.join(", ")}</p>`;
+        html += `<p style="font-size:0.85rem;color:#fcd34d;margin-top:0.5rem;">${tr("ignoredColumns")}${unrecognized.map(escapeHtml).join(", ")}</p>`;
       }
       previewEl.innerHTML = html;
     },
@@ -605,6 +677,9 @@ function handleFile(file) {
 }
 
 dropEl.addEventListener("click", () => fileInput.click());
+dropEl.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInput.click(); }
+});
 fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
 
 ["dragenter", "dragover"].forEach(evt =>
@@ -647,7 +722,11 @@ generateBtn.addEventListener("click", async () => {
   try {
     const { doc, overflowReport } = await buildCurrentDoc();
     renderFitWarnings(overflowReport);
-    await savePdf(doc);
+    const saved = await savePdf(doc);
+    if (!saved) {
+      setStatus(tr("pdfCancelled"), "");
+      return;
+    }
     setStatus(
       overflowReport.length
         ? tr("pdfSavedOverflow").replace("{n}", overflowReport.length)
