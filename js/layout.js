@@ -59,14 +59,14 @@ const DESCENDER_RATIO = 0.25;
 // opts: { centerX, centerY, titleBodyGap, padLeft, padTop, padRight,
 // padBottom, noWrap } all optional - omitted ones default to the sheet-mode
 // look (left/top anchored, fixed padding, wrapping allowed) so existing
-// callers are unaffected. Label mode passes centerY:true plus its own
-// padding/gap to vertically center the block, while leaving each line
-// left-aligned (centerX left at its false default) rather than centered
-// horizontally. Auto-fit also passes noWrap:true, so a line that would need
-// to wrap counts as overflow and the binary search picks a smaller size
-// instead - otherwise the "best fit" size could still wrap a line. Manual
-// font size leaves wrapping on, same as sheet mode: the size is fixed by
-// the user, so a long line just wraps rather than being flagged.
+// callers are unaffected. Label mode leaves centerX/centerY at their false
+// defaults too (top-left anchored, same as sheet mode), just with its own
+// padding/gap instead of the sheet preset's calibrated PAD_LEFT/PAD_TOP.
+// Auto-fit also passes noWrap:true, so a line that would need to wrap
+// counts as overflow and the binary search picks a smaller size instead -
+// otherwise the "best fit" size could still wrap a line. Manual font size
+// leaves wrapping on, same as sheet mode: the size is fixed by the user,
+// so a long line just wraps rather than being flagged.
 function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, opts = {}) {
   const centerX = !!opts.centerX;
   const centerY = !!opts.centerY;
@@ -133,9 +133,9 @@ function drawSticker(doc, x, yTop, placed, fontFamily) {
 
 // Label mode's default (when "Manual font size" is off): each lot's text is
 // sized as large as will fit that specific label (binary search on title
-// size, with body size and the title/body gap scaled to match), then
-// centered. Different lots can end up with different sizes; that's the
-// point - a short code fills the label just as a long one does.
+// size, with body size and the title/body gap scaled to match). Different
+// lots can end up with different sizes; that's the point - a short code
+// fills the label just as a long one does.
 const AUTO_FIT_MIN_TITLE = 6;
 const AUTO_FIT_MAX_TITLE = 60;
 const AUTO_FIT_BODY_RATIO = 9 / 12; // same title:body proportion as the sheet-mode defaults
@@ -145,7 +145,7 @@ const AUTO_FIT_SEARCH_STEPS = 18;
 const AUTO_FIT_PAD = PAD;
 
 function autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily) {
-  const padOpts = { centerY: true, noWrap: true, padLeft: AUTO_FIT_PAD, padTop: AUTO_FIT_PAD, padRight: AUTO_FIT_PAD, padBottom: AUTO_FIT_PAD };
+  const padOpts = { noWrap: true, padLeft: AUTO_FIT_PAD, padTop: AUTO_FIT_PAD, padRight: AUTO_FIT_PAD, padBottom: AUTO_FIT_PAD };
   function attempt(titleSize) {
     const bodySize = titleSize * AUTO_FIT_BODY_RATIO;
     const lines = buildLines(row, columns, titleSize, bodySize);
@@ -172,8 +172,8 @@ function autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily) {
 }
 
 // Label mode's layout, honoring the "Manual font size" override: when it's
-// on, use the same Title/Body size fields as sheet mode (still centered,
-// same margins as auto-fit) instead of searching for a best-fit size.
+// on, use the same Title/Body size fields as sheet mode (same margins as
+// auto-fit) instead of searching for a best-fit size.
 function labelLayoutFor(doc, stickerW, stickerH, row, columns, fontFamily, options) {
   if (!options.manualFontSize) {
     return autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily);
@@ -181,7 +181,6 @@ function labelLayoutFor(doc, stickerW, stickerH, row, columns, fontFamily, optio
   const { titleSize, bodySize } = options;
   const lines = buildLines(row, columns, titleSize, bodySize);
   const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
-    centerY: true,
     titleBodyGap: titleSize * 0.3,
     padLeft: AUTO_FIT_PAD,
     padTop: AUTO_FIT_PAD,

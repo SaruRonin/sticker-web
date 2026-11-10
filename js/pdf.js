@@ -108,8 +108,9 @@ async function buildDoc(rows, columns, options) {
 // each row's lot repeated `quantities[i]` times. Reuses the same
 // buildLines/layoutSticker/drawSticker content layer as buildDoc, so the
 // two output modes only differ in how pages/positions are assembled - and
-// in that each lot's text is centered, either auto-sized (labelLayoutFor's
-// default) or using the Title/Body size fields when "Manual font size" is on.
+// in that each lot's text size is either auto-fit (labelLayoutFor's
+// default) or comes from the Title/Body size fields when "Manual font
+// size" is on.
 async function buildLabelDoc(rows, columns, quantities, options) {
   const { fontFamily, stickerWidthMm, stickerHeightMm } = options;
   const stickerW = stickerWidthMm * PT_PER_MM;
