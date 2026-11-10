@@ -63,6 +63,18 @@ async function savePdf(doc) {
   }
 }
 
+// Given how many stickers need printing, how many fit per page, and how
+// many of the first page's cells are already used (skipped, for reusing a
+// partially-used physical sheet), returns how many pages the sequence will
+// span. Used by runFitCheck to predict the page count before building the
+// actual PDF; buildDoc's own loop below must stay consistent with this.
+function computeSheetPages(totalStickers, perPage, usedOnFirstPage) {
+  if (totalStickers <= 0) return 0;
+  const availableOnFirstPage = Math.max(0, perPage - usedOnFirstPage);
+  if (totalStickers <= availableOnFirstPage) return 1;
+  return 1 + Math.ceil((totalStickers - availableOnFirstPage) / perPage);
+}
+
 // Builds the full PDF and returns it along with a report of any lots whose
 // content didn't fully fit in their sticker cell. Each lot contributes
 // `quantities[i]` copies (not a full page each) to one continuous sequence
@@ -70,7 +82,13 @@ async function savePdf(doc) {
 // starts a new page once the current one's cells are full - so a handful
 // of 2-3-copy lots can share a single sheet instead of each claiming a
 // whole page of 21.
-async function buildDoc(rows, quantities, options) {
+//
+// skipCells (optional): a boolean array, one per grid cell, marking cells
+// on the FIRST page only that are already used on the physical sheet (e.g.
+// stickers already peeled from a previous print run) and so should stay
+// blank instead of receiving the next sticker in the sequence. Every page
+// after the first always uses every cell, since those are fresh sheets.
+async function buildDoc(rows, quantities, options, skipCells) {
   const { fontFamily, titleSize, bodySize, stickerWidthMm, stickerHeightMm, gapXMm, gapYMm } = options;
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const resolvedFamily = await ensureFont(doc, fontFamily);
@@ -85,6 +103,7 @@ async function buildDoc(rows, quantities, options) {
     throw new Error(`Sticker size ${stickerWidthMm}×${stickerHeightMm}mm (with gaps) is too large to fit on an A4 page.`);
   }
   const perPage = cols * gridRows;
+  const skip = skipCells && skipCells.length === perPage ? skipCells : new Array(perPage).fill(false);
   const overflowReport = [];
 
   // Lay out each lot's content once, then repeat the result `quantities[i]`
@@ -107,18 +126,24 @@ async function buildDoc(rows, quantities, options) {
     throw new Error("Set a quantity greater than 0 for at least one lot.");
   }
 
-  sequence.forEach((placed, i) => {
-    const posInPage = i % perPage;
-    if (i > 0 && posInPage === 0) doc.addPage();
-    const col = posInPage % cols;
-    const r = Math.floor(posInPage / cols);
-    const x = marginX + col * (stickerW + gapX);
-    const yTop = marginY + r * (stickerH + gapY);
-    drawSticker(doc, x, yTop, placed, resolvedFamily);
-  });
+  let seqIndex = 0;
+  let pageIndex = 0;
+  while (seqIndex < sequence.length) {
+    if (pageIndex > 0) doc.addPage();
+    const isFirstPage = pageIndex === 0;
+    for (let cell = 0; cell < perPage && seqIndex < sequence.length; cell++) {
+      if (isFirstPage && skip[cell]) continue; // already used on the physical sheet - leave blank
+      const col = cell % cols;
+      const r = Math.floor(cell / cols);
+      const x = marginX + col * (stickerW + gapX);
+      const yTop = marginY + r * (stickerH + gapY);
+      drawSticker(doc, x, yTop, sequence[seqIndex], resolvedFamily);
+      seqIndex++;
+    }
+    pageIndex++;
+  }
 
-  const totalPages = Math.ceil(sequence.length / perPage);
-  return { doc, overflowReport, cols, rows: gridRows, perPage, totalStickers: sequence.length, totalPages };
+  return { doc, overflowReport, cols, rows: gridRows, perPage, totalStickers: sequence.length, totalPages: doc.internal.getNumberOfPages() };
 }
 
 // Builds a document for a thermal label printer: one page per physical

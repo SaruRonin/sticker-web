@@ -13,8 +13,16 @@ const previewContainer = document.getElementById("previewContainer");
 const previewFrame = document.getElementById("previewFrame");
 
 let parsedRows = null; // array of canonical lot objects (see emptyLot/toCanonicalRow), from CSV or the Edit Lots modal
-let quantities = []; // label mode only: copies to print for each row, parallel to parsedRows
+let quantities = []; // copies to print for each row, parallel to parsedRows (both output modes)
 let outputModeValue = "sheet"; // set by the Output toggle buttons, see setOutputMode
+
+// Sheet mode only: lets a partially-used physical sheet be reused by
+// marking which of its grid cells are already gone, so the first page's
+// sequence skips those positions instead of printing over blank stickers
+// that aren't actually there. usedCells[i] true = already used/skip.
+let usedCells = [];
+let cellPickerCols = 0;
+let cellPickerRows = 0;
 
 function currentMode() {
   return outputModeValue;
@@ -107,14 +115,18 @@ async function runFitCheck() {
     warningsEl.className = "";
     return;
   }
+  syncCellPicker();
   const perPage = grid.cols * grid.rows;
   const totalStickers = quantities.reduce((sum, q) => sum + (q || 0), 0);
+  const usedOnFirstPage = reuseEnabled() ? usedCells.filter(Boolean).length : 0;
+  const totalPages = computeSheetPages(totalStickers, perPage, usedOnFirstPage);
   generateBtn.disabled = totalStickers <= 0;
   previewBtn.disabled = totalStickers <= 0;
   setStatus(
     totalStickers > 0
       ? `Loaded ${parsedRows.length} lot(s) → ${totalStickers} sticker(s) across ` +
-        `${Math.ceil(totalStickers / perPage)} page(s) (${grid.cols}×${grid.rows} grid, ${perPage} per page).`
+        `${totalPages} page(s) (${grid.cols}×${grid.rows} grid, ${perPage} per page` +
+        (usedOnFirstPage > 0 ? `, ${usedOnFirstPage} already used on sheet 1` : "") + ")."
       : "Set a quantity greater than 0 for at least one lot.",
     totalStickers > 0 ? "ok" : "error"
   );
@@ -193,6 +205,64 @@ document.getElementById("quantityTable").addEventListener("input", (e) => {
   if (!e.target.classList.contains("qtyInput")) return;
   const idx = parseInt(e.target.dataset.idx, 10);
   quantities[idx] = Math.max(0, parseInt(e.target.value, 10) || 0);
+  runFitCheck();
+});
+
+// Sticker Saver: the "reuse a partially-used sheet" cell picker (sheet
+// mode only). Keeps usedCells sized to the current grid, resetting it
+// (not preserving stale picks) whenever the grid's cols/rows actually
+// change - a saved pattern from a 3x7 grid wouldn't make sense mapped onto
+// a 2x4 one.
+function reuseEnabled() {
+  return document.getElementById("reusePartialSheet").checked;
+}
+
+function renderCellPickerGrid() {
+  const grid = document.getElementById("cellPickerGrid");
+  grid.style.gridTemplateColumns = `repeat(${cellPickerCols}, 1fr)`;
+  let html = "";
+  usedCells.forEach((used, i) => {
+    html += `<div class="pickerCell${used ? " used" : ""}" data-idx="${i}">${i + 1}</div>`;
+  });
+  grid.innerHTML = html;
+}
+
+function syncCellPicker() {
+  if (!reuseEnabled()) return;
+  const grid = gridFromOptions(getOptions());
+  if (grid.cols < 1 || grid.rows < 1) return;
+  if (grid.cols !== cellPickerCols || grid.rows !== cellPickerRows) {
+    cellPickerCols = grid.cols;
+    cellPickerRows = grid.rows;
+    usedCells = new Array(grid.cols * grid.rows).fill(false);
+  }
+  renderCellPickerGrid();
+}
+
+document.getElementById("reusePartialSheet").addEventListener("change", (e) => {
+  document.getElementById("cellPickerWrap").style.display = e.target.checked ? "" : "none";
+  if (e.target.checked) syncCellPicker();
+  runFitCheck();
+});
+
+document.getElementById("cellPickerGrid").addEventListener("click", (e) => {
+  const cell = e.target.closest(".pickerCell");
+  if (!cell) return;
+  const idx = parseInt(cell.dataset.idx, 10);
+  usedCells[idx] = !usedCells[idx];
+  cell.classList.toggle("used", usedCells[idx]);
+  runFitCheck();
+});
+
+document.getElementById("markAllUsedBtn").addEventListener("click", () => {
+  usedCells = usedCells.map(() => true);
+  renderCellPickerGrid();
+  runFitCheck();
+});
+
+document.getElementById("markAllAvailableBtn").addEventListener("click", () => {
+  usedCells = usedCells.map(() => false);
+  renderCellPickerGrid();
   runFitCheck();
 });
 
@@ -382,9 +452,11 @@ dropEl.addEventListener("drop", (e) => {
 
 async function buildCurrentDoc() {
   const options = getOptions();
-  return currentMode() === "label"
-    ? buildLabelDoc(parsedRows, quantities, options)
-    : buildDoc(parsedRows, quantities, options);
+  if (currentMode() === "label") {
+    return buildLabelDoc(parsedRows, quantities, options);
+  }
+  const skipCells = reuseEnabled() ? usedCells : undefined;
+  return buildDoc(parsedRows, quantities, options, skipCells);
 }
 
 previewBtn.addEventListener("click", async () => {

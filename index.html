@@ -96,6 +96,20 @@
   <div id="quantityTable"></div>
 </div>
 
+<div class="sheet-only">
+  <label class="checkbox" style="margin-bottom:0.5rem;">
+    <input type="checkbox" id="reusePartialSheet">
+    Reuse a partially-used sheet (mark which stickers are already gone)
+  </label>
+  <div id="cellPickerWrap" style="display:none;">
+    <div class="picker-actions">
+      <button type="button" id="markAllUsedBtn" class="secondary">Mark all used</button>
+      <button type="button" id="markAllAvailableBtn" class="secondary">Mark all available</button>
+    </div>
+    <div id="cellPickerGrid" class="cell-picker-grid"></div>
+  </div>
+</div>
+
 <div class="actions">
   <button id="generateBtn" disabled>Generate PDF</button>
   <button id="previewBtn" class="secondary" disabled>Preview PDF</button>
