@@ -23,6 +23,7 @@ let outputModeValue = "sheet"; // set by the Output toggle buttons, see setOutpu
 let usedCells = [];
 let cellPickerCols = 0;
 let cellPickerRows = 0;
+let cellPickerRatio = 1; // current sticker width/height, so picker cells look like the real stickers
 
 function currentMode() {
   return outputModeValue;
@@ -221,6 +222,7 @@ function reuseEnabled() {
 function renderCellPickerGrid() {
   const grid = document.getElementById("cellPickerGrid");
   grid.style.gridTemplateColumns = `repeat(${cellPickerCols}, 1fr)`;
+  grid.style.setProperty("--sticker-ratio", cellPickerRatio);
   let html = "";
   usedCells.forEach((used, i) => {
     html += `<div class="pickerCell${used ? " used" : ""}" data-idx="${i}">${i + 1}</div>`;
@@ -230,8 +232,10 @@ function renderCellPickerGrid() {
 
 function syncCellPicker() {
   if (!reuseEnabled()) return;
-  const grid = gridFromOptions(getOptions());
+  const options = getOptions();
+  const grid = gridFromOptions(options);
   if (grid.cols < 1 || grid.rows < 1) return;
+  cellPickerRatio = options.stickerWidthMm / options.stickerHeightMm;
   if (grid.cols !== cellPickerCols || grid.rows !== cellPickerRows) {
     cellPickerCols = grid.cols;
     cellPickerRows = grid.rows;

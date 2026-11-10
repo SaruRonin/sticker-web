@@ -260,9 +260,10 @@ button.secondary:hover:not(:disabled) { background: rgba(109, 40, 217, 0.2); }
   gap: 4px;
   max-width: 100%;
   margin-bottom: 0.5rem;
+  --sticker-ratio: 1;
 }
 .pickerCell {
-  aspect-ratio: 1;
+  aspect-ratio: var(--sticker-ratio, 1);
   min-width: 22px;
   display: flex;
   align-items: center;
