@@ -1,0 +1,313 @@
+// UI wiring: DOM state, event listeners, CSV handling, and the
+// preview/generate actions. Depends on everything else (country-codes.js,
+// csv.js, layout.js, fonts.js, pdf.js), all loaded before this file.
+
+const dropEl = document.getElementById("drop");
+const fileInput = document.getElementById("fileInput");
+const generateBtn = document.getElementById("generateBtn");
+const previewBtn = document.getElementById("previewBtn");
+const statusEl = document.getElementById("status");
+const previewEl = document.getElementById("preview");
+const warningsEl = document.getElementById("warnings");
+const previewContainer = document.getElementById("previewContainer");
+const previewFrame = document.getElementById("previewFrame");
+
+let parsedRows = null;
+let parsedColumns = null;
+let quantities = []; // label mode only: copies to print for each row, parallel to parsedRows
+let outputModeValue = "sheet"; // set by the Output toggle buttons, see setOutputMode
+
+function currentMode() {
+  return outputModeValue;
+}
+
+function setStatus(msg, kind) {
+  statusEl.textContent = msg;
+  statusEl.className = kind || "";
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getOptions() {
+  return {
+    fontFamily: document.getElementById("fontFamily").value,
+    titleSize: parseFloat(document.getElementById("titleSize").value) || 12,
+    bodySize: parseFloat(document.getElementById("bodySize").value) || 9,
+    stickerWidthMm: parseFloat(document.getElementById("stickerWidth").value) || 70,
+    stickerHeightMm: parseFloat(document.getElementById("stickerHeight").value) || 42.3,
+    gapXMm: parseFloat(document.getElementById("gapX").value) || 0,
+    gapYMm: parseFloat(document.getElementById("gapY").value) || 0,
+    manualFontSize: document.getElementById("manualFontSize").checked,
+  };
+}
+
+function renderFitWarnings(report) {
+  const overflowing = report.filter((r) => r.overflow);
+  if (!overflowing.length) {
+    warningsEl.innerHTML = "";
+    warningsEl.className = "";
+    return;
+  }
+  const items = overflowing
+    .map((r) => {
+      const label = r.code || r.name || "(unlabeled row)";
+      return `<li><strong>${escapeHtml(label)}</strong> — cut off at: "${escapeHtml(r.cutText)}"</li>`;
+    })
+    .join("");
+  warningsEl.innerHTML =
+    `<strong>${overflowing.length} lot(s) won't fully fit</strong> at this font/size — some text will be cut off:` +
+    `<ul>${items}</ul>` +
+    `Try a smaller font size, or use Preview to check before generating.`;
+  warningsEl.className = "warn";
+}
+
+async function runFitCheck() {
+  if (!parsedRows) return;
+  const options = getOptions();
+
+  if (currentMode() === "label") {
+    const totalLabels = quantities.reduce((sum, q) => sum + (q || 0), 0);
+    generateBtn.disabled = totalLabels <= 0;
+    previewBtn.disabled = totalLabels <= 0;
+    setStatus(
+      totalLabels > 0
+        ? `Loaded ${parsedRows.length} lot(s) → ${totalLabels} label(s) total.`
+        : "Set a quantity greater than 0 for at least one lot.",
+      totalLabels > 0 ? "ok" : "error"
+    );
+    renderFitWarnings(await checkFitLabel(parsedRows, parsedColumns, options));
+    return;
+  }
+
+  const grid = gridFromOptions(options);
+  if (grid.cols < 1 || grid.rows < 1) {
+    setStatus("Sticker size (with gaps) is too large to fit on an A4 page — reduce the width/height or gaps.", "error");
+    generateBtn.disabled = true;
+    previewBtn.disabled = true;
+    warningsEl.innerHTML = "";
+    warningsEl.className = "";
+    return;
+  }
+  generateBtn.disabled = false;
+  previewBtn.disabled = false;
+  setStatus(
+    `Loaded ${parsedRows.length} lot(s) → ${parsedRows.length} page(s), ` +
+      `${parsedRows.length * grid.cols * grid.rows} stickers total (${grid.cols}×${grid.rows} grid).`,
+    "ok"
+  );
+  renderFitWarnings(await checkFit(parsedRows, parsedColumns, options));
+}
+
+["fontFamily", "titleSize", "bodySize", "stickerWidth", "stickerHeight", "gapX", "gapY"].forEach((id) => {
+  document.getElementById(id).addEventListener("input", runFitCheck);
+});
+
+// Applying a named preset fills in and locks the size/gap fields so they
+// can't drift from the standard; "Custom size" unlocks them for editing.
+function applyLabelPreset(presetId) {
+  const widthEl = document.getElementById("stickerWidth");
+  const heightEl = document.getElementById("stickerHeight");
+  const gapXEl = document.getElementById("gapX");
+  const gapYEl = document.getElementById("gapY");
+  const preset = LABEL_PRESETS[presetId];
+
+  [widthEl, heightEl, gapXEl, gapYEl].forEach((el) => { el.disabled = !!preset; });
+  if (preset) {
+    widthEl.value = preset.widthMm;
+    heightEl.value = preset.heightMm;
+    gapXEl.value = preset.gapXMm;
+    gapYEl.value = preset.gapYMm;
+  }
+  runFitCheck();
+}
+
+document.getElementById("labelPreset").addEventListener("change", (e) => applyLabelPreset(e.target.value));
+
+// Renders the per-lot quantity inputs (label mode only). The container div
+// itself is never replaced, just its contents, so the single delegated
+// "input" listener registered below keeps working across re-renders.
+function renderQuantityTable() {
+  const section = document.getElementById("quantitySection");
+  const container = document.getElementById("quantityTable");
+  if (currentMode() !== "label" || !parsedRows) {
+    section.style.display = "none";
+    container.innerHTML = "";
+    return;
+  }
+  section.style.display = "";
+  let html = "<table><tr><th>Lot</th><th>Quantity</th></tr>";
+  parsedRows.forEach((row, idx) => {
+    const code = parsedColumns.code ? cleanField(row[parsedColumns.code]) : "";
+    const name = parsedColumns.name ? cleanField(row[parsedColumns.name]) : "";
+    const label = escapeHtml(code || name || `Row ${idx + 1}`);
+    html += `<tr><td>${label}</td><td><input type="number" class="qtyInput" data-idx="${idx}" min="0" step="1" value="${quantities[idx] ?? 1}"></td></tr>`;
+  });
+  html += "</table>";
+  container.innerHTML = html;
+}
+
+document.getElementById("quantityTable").addEventListener("input", (e) => {
+  if (!e.target.classList.contains("qtyInput")) return;
+  const idx = parseInt(e.target.dataset.idx, 10);
+  quantities[idx] = Math.max(0, parseInt(e.target.value, 10) || 0);
+  runFitCheck();
+});
+
+// Shows/hides the sheet-only fields (gap X/Y) and quantity table, filters
+// the "Label size" dropdown to presets tagged for this mode, and switches
+// to that mode's default preset.
+function selectDefaultPresetForMode(mode) {
+  const sel = document.getElementById("labelPreset");
+  Array.from(sel.options).forEach((opt) => {
+    opt.hidden = !!opt.dataset.mode && opt.dataset.mode !== mode;
+  });
+  const firstMatch = Array.from(sel.options).find((opt) => opt.dataset.mode === mode);
+  sel.value = (firstMatch || sel.options[0]).value;
+}
+
+// Title/Body size are always relevant for sheet mode, but for label mode
+// they only apply when "Manual font size" is checked (otherwise autoFitLayout
+// picks the size per lot, so showing fields that don't do anything would be
+// confusing).
+function updateFontFieldsVisibility() {
+  const show = currentMode() === "sheet" || document.getElementById("manualFontSize").checked;
+  document.getElementById("titleSizeWrap").style.display = show ? "" : "none";
+  document.getElementById("bodySizeWrap").style.display = show ? "" : "none";
+}
+
+function setOutputMode(mode) {
+  outputModeValue = mode;
+  document.querySelectorAll(".modeBtn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+  selectDefaultPresetForMode(mode);
+  document.querySelectorAll(".sheet-only").forEach((el) => {
+    el.style.display = mode === "label" ? "none" : "";
+  });
+  document.querySelectorAll(".label-only").forEach((el) => {
+    el.style.display = mode === "label" ? "" : "none";
+  });
+  updateFontFieldsVisibility();
+  applyLabelPreset(document.getElementById("labelPreset").value); // also runs the fit check
+  renderQuantityTable();
+}
+
+document.querySelectorAll(".modeBtn").forEach((btn) => {
+  btn.addEventListener("click", () => setOutputMode(btn.dataset.mode));
+});
+document.getElementById("manualFontSize").addEventListener("change", () => {
+  updateFontFieldsVisibility();
+  runFitCheck();
+});
+setOutputMode(outputModeValue);
+
+function handleFile(file) {
+  if (!file) return;
+  setStatus("Parsing " + file.name + "...");
+  generateBtn.disabled = true;
+  previewBtn.disabled = true;
+  previewEl.innerHTML = "";
+  warningsEl.innerHTML = "";
+  warningsEl.className = "";
+  previewContainer.style.display = "none";
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      const fatalErrors = (results.errors || []).filter(
+        (e) => e.code !== "UndetectableDelimiter"
+      );
+      if (fatalErrors.length) {
+        setStatus("CSV parse error: " + fatalErrors[0].message, "error");
+        return;
+      }
+      const fieldnames = results.meta.fields || [];
+      if (!fieldnames.length) {
+        setStatus("CSV has no header row.", "error");
+        return;
+      }
+      const columns = matchColumns(fieldnames);
+      const rows = results.data;
+      if (!rows.length) {
+        setStatus("CSV has no data rows.", "error");
+        return;
+      }
+
+      parsedRows = rows;
+      parsedColumns = columns;
+      quantities = rows.map(() => 1);
+      renderQuantityTable();
+      runFitCheck();
+
+      const recognized = Object.keys(columns);
+      const unrecognized = fieldnames.filter(f => !Object.values(columns).includes(f));
+      let html = "<table><tr><th>Recognized field</th><th>CSV column</th></tr>";
+      recognized.forEach(k => { html += `<tr><td>${k}</td><td>${columns[k]}</td></tr>`; });
+      html += "</table>";
+      if (unrecognized.length) {
+        html += `<p style="font-size:0.85rem;color:#fcd34d;margin-top:0.5rem;">Ignored columns (no match): ${unrecognized.join(", ")}</p>`;
+      }
+      previewEl.innerHTML = html;
+    },
+    error: (err) => {
+      setStatus("Failed to read file: " + err.message, "error");
+    },
+  });
+}
+
+dropEl.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+["dragenter", "dragover"].forEach(evt =>
+  dropEl.addEventListener(evt, (e) => { e.preventDefault(); dropEl.classList.add("dragover"); })
+);
+["dragleave", "drop"].forEach(evt =>
+  dropEl.addEventListener(evt, (e) => { e.preventDefault(); dropEl.classList.remove("dragover"); })
+);
+dropEl.addEventListener("drop", (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+async function buildCurrentDoc() {
+  const options = getOptions();
+  return currentMode() === "label"
+    ? buildLabelDoc(parsedRows, parsedColumns, quantities, options)
+    : buildDoc(parsedRows, parsedColumns, options);
+}
+
+previewBtn.addEventListener("click", async () => {
+  if (!parsedRows) return;
+  try {
+    const { doc, overflowReport } = await buildCurrentDoc();
+    renderFitWarnings(overflowReport);
+    previewFrame.src = doc.output("bloburl");
+    previewContainer.style.display = "block";
+    previewContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus("Preview generated.", "ok");
+  } catch (err) {
+    setStatus("Error generating preview: " + err.message, "error");
+  }
+});
+
+generateBtn.addEventListener("click", async () => {
+  if (!parsedRows) return;
+  try {
+    const { doc, overflowReport } = await buildCurrentDoc();
+    renderFitWarnings(overflowReport);
+    await savePdf(doc);
+    setStatus(
+      overflowReport.length
+        ? `PDF saved — but ${overflowReport.length} lot(s) had text cut off, see warning above.`
+        : "PDF saved.",
+      overflowReport.length ? "error" : "ok"
+    );
+  } catch (err) {
+    setStatus("Error generating PDF: " + err.message, "error");
+  }
+});
