@@ -16,16 +16,16 @@ function tr(key) { return (UI_TEXT[uiLanguage] && UI_TEXT[uiLanguage][key]) || U
 function applyLanguage() {
   document.documentElement.lang = uiLanguage;
   document.title = tr("appTitle");
-  document.getElementById("languageSelect").setAttribute("aria-label", tr("language"));
+  document.getElementById("languageToggle").setAttribute("aria-label", tr("language"));
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = tr(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = tr(el.dataset.i18nTitle); });
-  document.getElementById("languageSelect").value = uiLanguage;
+  document.getElementById("languageToggle").setAttribute("aria-checked", String(uiLanguage === "ja"));
   renderQuantityTable();
   if (parsedRows) renderLotModalTable();
   if (parsedRows) runFitCheck();
 }
-document.getElementById("languageSelect").addEventListener("change", e => {
-  uiLanguage = e.target.value;
+document.getElementById("languageToggle").addEventListener("click", () => {
+  uiLanguage = uiLanguage === "en" ? "ja" : "en";
   localStorage.setItem("stickerUiLanguage", uiLanguage);
   applyLanguage();
 });
