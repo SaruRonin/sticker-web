@@ -144,11 +144,28 @@ function renderQuantityTable() {
     const code = parsedColumns.code ? cleanField(row[parsedColumns.code]) : "";
     const name = parsedColumns.name ? cleanField(row[parsedColumns.name]) : "";
     const label = escapeHtml(code || name || `Row ${idx + 1}`);
-    html += `<tr><td>${label}</td><td><input type="number" class="qtyInput" data-idx="${idx}" min="0" step="1" value="${quantities[idx] ?? 1}"></td></tr>`;
+    html += `<tr><td>${label}</td><td>
+      <div class="qtyStepper">
+        <button type="button" class="qtyBtn" data-action="dec" data-idx="${idx}" aria-label="Decrease quantity">-</button>
+        <input type="number" class="qtyInput" data-idx="${idx}" min="0" step="1" value="${quantities[idx] ?? 1}">
+        <button type="button" class="qtyBtn" data-action="inc" data-idx="${idx}" aria-label="Increase quantity">+</button>
+      </div>
+    </td></tr>`;
   });
   html += "</table>";
   container.innerHTML = html;
 }
+
+document.getElementById("quantityTable").addEventListener("click", (e) => {
+  const btn = e.target.closest(".qtyBtn");
+  if (!btn) return;
+  const idx = parseInt(btn.dataset.idx, 10);
+  const delta = btn.dataset.action === "inc" ? 1 : -1;
+  quantities[idx] = Math.max(0, (quantities[idx] ?? 1) + delta);
+  const input = document.querySelector(`#quantityTable .qtyInput[data-idx="${idx}"]`);
+  if (input) input.value = quantities[idx];
+  runFitCheck();
+});
 
 document.getElementById("quantityTable").addEventListener("input", (e) => {
   if (!e.target.classList.contains("qtyInput")) return;

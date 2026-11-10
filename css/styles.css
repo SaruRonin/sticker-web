@@ -116,7 +116,7 @@ th { background: rgba(255, 255, 255, 0.06); }
   width: auto;
   accent-color: var(--purple);
 }
-.settings select, .settings input[type="number"], #quantityTable input[type="number"] {
+.settings select, .settings input[type="number"] {
   font-size: 0.9rem;
   padding: 0.3rem 0.4rem;
   border: 1px solid #5b3a8a;
@@ -128,6 +128,29 @@ th { background: rgba(255, 255, 255, 0.06); }
 .settings input[type="number"]:disabled {
   background: #2a1a42;
   color: #8b7aa8;
+}
+.qtyStepper { display: inline-flex; align-items: center; gap: 0.4rem; }
+.qtyStepper .qtyBtn {
+  padding: 0.15rem 0.55rem;
+  font-size: 1rem;
+  line-height: 1.2;
+  border-radius: 4px;
+}
+#quantityTable input[type="number"] {
+  font-size: 0.9rem;
+  padding: 0.3rem 0.2rem;
+  border: 1px solid #5b3a8a;
+  border-radius: 4px;
+  width: 3rem;
+  text-align: center;
+  background: #1a0b2e;
+  color: var(--text-light);
+  -moz-appearance: textfield;
+}
+#quantityTable input[type="number"]::-webkit-inner-spin-button,
+#quantityTable input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .actions { display: flex; gap: 0.6rem; align-items: center; margin-top: 1.5rem; }
 button.secondary { background: transparent; color: #e9d8ff; border: 1px solid var(--purple); }
