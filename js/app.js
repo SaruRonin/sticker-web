@@ -12,8 +12,7 @@ const warningsEl = document.getElementById("warnings");
 const previewContainer = document.getElementById("previewContainer");
 const previewFrame = document.getElementById("previewFrame");
 
-let parsedRows = null;
-let parsedColumns = null;
+let parsedRows = null; // array of canonical lot objects (see emptyLot/toCanonicalRow), from CSV or the Edit Lots modal
 let quantities = []; // label mode only: copies to print for each row, parallel to parsedRows
 let outputModeValue = "sheet"; // set by the Output toggle buttons, see setOutputMode
 
@@ -30,6 +29,13 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+// escapeHtml doesn't escape '"', since that's only unsafe inside an
+// attribute value (text-node serialization has no reason to escape it).
+// Use this instead when interpolating into value="...".
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, "&quot;");
 }
 
 function getOptions() {
@@ -69,6 +75,15 @@ async function runFitCheck() {
   if (!parsedRows) return;
   const options = getOptions();
 
+  if (parsedRows.length === 0) {
+    generateBtn.disabled = true;
+    previewBtn.disabled = true;
+    setStatus("Add at least one lot (via CSV or Edit Lots) to generate stickers.", "error");
+    warningsEl.innerHTML = "";
+    warningsEl.className = "";
+    return;
+  }
+
   if (currentMode() === "label") {
     const totalLabels = quantities.reduce((sum, q) => sum + (q || 0), 0);
     generateBtn.disabled = totalLabels <= 0;
@@ -79,7 +94,7 @@ async function runFitCheck() {
         : "Set a quantity greater than 0 for at least one lot.",
       totalLabels > 0 ? "ok" : "error"
     );
-    renderFitWarnings(await checkFitLabel(parsedRows, parsedColumns, options));
+    renderFitWarnings(await checkFitLabel(parsedRows, options));
     return;
   }
 
@@ -99,7 +114,7 @@ async function runFitCheck() {
       `${parsedRows.length * grid.cols * grid.rows} stickers total (${grid.cols}×${grid.rows} grid).`,
     "ok"
   );
-  renderFitWarnings(await checkFit(parsedRows, parsedColumns, options));
+  renderFitWarnings(await checkFit(parsedRows, options));
 }
 
 ["fontFamily", "titleSize", "bodySize", "stickerWidth", "stickerHeight", "gapX", "gapY"].forEach((id) => {
@@ -141,8 +156,8 @@ function renderQuantityTable() {
   section.style.display = "";
   let html = "<table><tr><th>Lot</th><th>Quantity</th></tr>";
   parsedRows.forEach((row, idx) => {
-    const code = parsedColumns.code ? cleanField(row[parsedColumns.code]) : "";
-    const name = parsedColumns.name ? cleanField(row[parsedColumns.name]) : "";
+    const code = cleanField(row.code);
+    const name = cleanField(row.name);
     const label = escapeHtml(code || name || `Row ${idx + 1}`);
     html += `<tr><td>${label}</td><td>
       <div class="qtyStepper">
@@ -171,6 +186,74 @@ document.getElementById("quantityTable").addEventListener("input", (e) => {
   if (!e.target.classList.contains("qtyInput")) return;
   const idx = parseInt(e.target.dataset.idx, 10);
   quantities[idx] = Math.max(0, parseInt(e.target.value, 10) || 0);
+  runFitCheck();
+});
+
+// The Edit Lots modal: lets lots be typed in by hand (with no CSV at all)
+// or added/edited/removed on top of whatever a CSV loaded. Every lot,
+// whatever its origin, is the same canonical shape (see emptyLot in
+// csv.js), so the modal and the rest of the app share one data model.
+const LOT_FIELD_LABELS = [
+  ["code", "Code"], ["name", "Name"], ["Country", "Country"], ["Region", "Region"],
+  ["Variety", "Variety"], ["Processing", "Processing"], ["Producer", "Producer"], ["Altitude", "Altitude"],
+];
+const lotModalOverlay = document.getElementById("lotModalOverlay");
+const lotModalTable = document.getElementById("lotModalTable");
+
+function renderLotModalTable() {
+  let html = "<tr>" + LOT_FIELD_LABELS.map(([, label]) => `<th>${label}</th>`).join("") + "<th></th></tr>";
+  parsedRows.forEach((row, idx) => {
+    html += "<tr>" + LOT_FIELD_LABELS.map(([field]) =>
+      `<td><input type="text" class="lotField" data-idx="${idx}" data-field="${field}" value="${escapeAttr(row[field] || "")}"></td>`
+    ).join("");
+    html += `<td><button type="button" class="removeLotBtn" data-idx="${idx}">Remove</button></td></tr>`;
+  });
+  lotModalTable.innerHTML = html;
+}
+
+function openLotModal() {
+  if (!parsedRows) {
+    parsedRows = [];
+    quantities = [];
+  }
+  renderLotModalTable();
+  lotModalOverlay.style.display = "flex";
+}
+
+function closeLotModal() {
+  lotModalOverlay.style.display = "none";
+}
+
+document.getElementById("editLotsBtn").addEventListener("click", openLotModal);
+document.getElementById("closeLotModalBtn").addEventListener("click", closeLotModal);
+lotModalOverlay.addEventListener("click", (e) => {
+  if (e.target === lotModalOverlay) closeLotModal(); // clicked the backdrop, not the box
+});
+
+document.getElementById("addLotBtn").addEventListener("click", () => {
+  parsedRows.push(emptyLot());
+  quantities.push(1);
+  renderLotModalTable();
+  renderQuantityTable();
+  runFitCheck();
+});
+
+lotModalTable.addEventListener("input", (e) => {
+  if (!e.target.classList.contains("lotField")) return;
+  const idx = parseInt(e.target.dataset.idx, 10);
+  parsedRows[idx][e.target.dataset.field] = e.target.value;
+  renderQuantityTable(); // code/name changes affect the quantity table's row labels
+  runFitCheck();
+});
+
+lotModalTable.addEventListener("click", (e) => {
+  const btn = e.target.closest(".removeLotBtn");
+  if (!btn) return;
+  const idx = parseInt(btn.dataset.idx, 10);
+  parsedRows.splice(idx, 1);
+  quantities.splice(idx, 1);
+  renderLotModalTable();
+  renderQuantityTable();
   runFitCheck();
 });
 
@@ -255,8 +338,7 @@ function handleFile(file) {
         return;
       }
 
-      parsedRows = rows;
-      parsedColumns = columns;
+      parsedRows = rows.map((row) => toCanonicalRow(row, columns));
       quantities = rows.map(() => 1);
       renderQuantityTable();
       runFitCheck();
@@ -294,8 +376,8 @@ dropEl.addEventListener("drop", (e) => {
 async function buildCurrentDoc() {
   const options = getOptions();
   return currentMode() === "label"
-    ? buildLabelDoc(parsedRows, parsedColumns, quantities, options)
-    : buildDoc(parsedRows, parsedColumns, options);
+    ? buildLabelDoc(parsedRows, quantities, options)
+    : buildDoc(parsedRows, options);
 }
 
 previewBtn.addEventListener("click", async () => {

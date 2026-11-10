@@ -6,7 +6,7 @@ const { jsPDF } = window.jspdf;
 
 // Cheap check (no pages created) of whether every lot's content fits in a
 // single sticker cell at the given font/size settings.
-async function checkFit(rows, columns, options) {
+async function checkFit(rows, options) {
   const { fontFamily, titleSize, bodySize, stickerWidthMm, stickerHeightMm } = options;
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const resolvedFamily = await ensureFont(doc, fontFamily);
@@ -14,9 +14,9 @@ async function checkFit(rows, columns, options) {
   const stickerH = stickerHeightMm * PT_PER_MM;
 
   return rows.map((row) => {
-    const code = columns.code ? cleanField(row[columns.code]) : "";
-    const name = columns.name ? cleanField(row[columns.name]) : "";
-    const lines = buildLines(row, columns, titleSize, bodySize);
+    const code = cleanField(row.code);
+    const name = cleanField(row.name);
+    const lines = buildLines(row, titleSize, bodySize);
     const { overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
     return { code, name, overflow, cutText };
   });
@@ -27,7 +27,7 @@ async function checkFit(rows, columns, options) {
 // fields, so this only reports overflow for lots where even the minimum
 // auto-fit size doesn't fit; with it on, it checks the manual size exactly
 // like sheet mode does.
-async function checkFitLabel(rows, columns, options) {
+async function checkFitLabel(rows, options) {
   const { fontFamily, stickerWidthMm, stickerHeightMm } = options;
   const stickerW = stickerWidthMm * PT_PER_MM;
   const stickerH = stickerHeightMm * PT_PER_MM;
@@ -35,9 +35,9 @@ async function checkFitLabel(rows, columns, options) {
   const resolvedFamily = await ensureFont(doc, fontFamily);
 
   return rows.map((row) => {
-    const code = columns.code ? cleanField(row[columns.code]) : "";
-    const name = columns.name ? cleanField(row[columns.name]) : "";
-    const { overflow, cutText } = labelLayoutFor(doc, stickerW, stickerH, row, columns, resolvedFamily, options);
+    const code = cleanField(row.code);
+    const name = cleanField(row.name);
+    const { overflow, cutText } = labelLayoutFor(doc, stickerW, stickerH, row, resolvedFamily, options);
     return { code, name, overflow, cutText };
   });
 }
@@ -65,7 +65,7 @@ async function savePdf(doc) {
 
 // Builds the full PDF and returns it along with a report of any lots whose
 // content didn't fully fit in their sticker cell.
-async function buildDoc(rows, columns, options) {
+async function buildDoc(rows, options) {
   const { fontFamily, titleSize, bodySize, stickerWidthMm, stickerHeightMm, gapXMm, gapYMm } = options;
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const resolvedFamily = await ensureFont(doc, fontFamily);
@@ -84,9 +84,9 @@ async function buildDoc(rows, columns, options) {
 
   rows.forEach((row, idx) => {
     if (idx > 0) doc.addPage();
-    const code = columns.code ? cleanField(row[columns.code]) : "";
-    const name = columns.name ? cleanField(row[columns.name]) : "";
-    const lines = buildLines(row, columns, titleSize, bodySize);
+    const code = cleanField(row.code);
+    const name = cleanField(row.name);
+    const lines = buildLines(row, titleSize, bodySize);
     const { placed, overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
 
     for (let i = 0; i < perPage; i++) {
@@ -111,7 +111,7 @@ async function buildDoc(rows, columns, options) {
 // in that each lot's text size is either auto-fit (labelLayoutFor's
 // default) or comes from the Title/Body size fields when "Manual font
 // size" is on.
-async function buildLabelDoc(rows, columns, quantities, options) {
+async function buildLabelDoc(rows, quantities, options) {
   const { fontFamily, stickerWidthMm, stickerHeightMm } = options;
   const stickerW = stickerWidthMm * PT_PER_MM;
   const stickerH = stickerHeightMm * PT_PER_MM;
@@ -124,9 +124,9 @@ async function buildLabelDoc(rows, columns, quantities, options) {
   rows.forEach((row, idx) => {
     const qty = Math.max(0, Math.round(quantities[idx] ?? 0));
     if (qty <= 0) return;
-    const code = columns.code ? cleanField(row[columns.code]) : "";
-    const name = columns.name ? cleanField(row[columns.name]) : "";
-    const { placed, overflow, cutText } = labelLayoutFor(doc, stickerW, stickerH, row, columns, resolvedFamily, options);
+    const code = cleanField(row.code);
+    const name = cleanField(row.name);
+    const { placed, overflow, cutText } = labelLayoutFor(doc, stickerW, stickerH, row, resolvedFamily, options);
     if (overflow) overflowReport.push({ code, name, cutText, overflow: true });
 
     for (let i = 0; i < qty; i++) {

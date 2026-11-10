@@ -144,11 +144,11 @@ const AUTO_FIT_SEARCH_STEPS = 18;
 // this hasn't been calibrated against a real printed MUNBYN label yet.
 const AUTO_FIT_PAD = PAD;
 
-function autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily) {
+function autoFitLayout(doc, stickerW, stickerH, row, fontFamily) {
   const padOpts = { noWrap: true, padLeft: AUTO_FIT_PAD, padTop: AUTO_FIT_PAD, padRight: AUTO_FIT_PAD, padBottom: AUTO_FIT_PAD };
   function attempt(titleSize) {
     const bodySize = titleSize * AUTO_FIT_BODY_RATIO;
-    const lines = buildLines(row, columns, titleSize, bodySize);
+    const lines = buildLines(row, titleSize, bodySize);
     const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
       ...padOpts,
       titleBodyGap: titleSize * 0.3,
@@ -174,12 +174,12 @@ function autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily) {
 // Label mode's layout, honoring the "Manual font size" override: when it's
 // on, use the same Title/Body size fields as sheet mode (same margins as
 // auto-fit) instead of searching for a best-fit size.
-function labelLayoutFor(doc, stickerW, stickerH, row, columns, fontFamily, options) {
+function labelLayoutFor(doc, stickerW, stickerH, row, fontFamily, options) {
   if (!options.manualFontSize) {
-    return autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily);
+    return autoFitLayout(doc, stickerW, stickerH, row, fontFamily);
   }
   const { titleSize, bodySize } = options;
-  const lines = buildLines(row, columns, titleSize, bodySize);
+  const lines = buildLines(row, titleSize, bodySize);
   const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
     titleBodyGap: titleSize * 0.3,
     padLeft: AUTO_FIT_PAD,

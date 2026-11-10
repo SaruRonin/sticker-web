@@ -12,6 +12,31 @@ const FIELD_ALIASES = {
   Altitude: ["altitude", "elevation"],
 };
 
+// Canonical per-lot fields, in sticker order. "code"/"name" render as the
+// bold title lines; the rest render as "Label: value" body lines. Every
+// row the app works with - from CSV or typed in manually - has exactly
+// these keys (emptyLot), so nothing downstream needs a CSV-column mapping.
+const TITLE_FIELDS = ["code", "name"];
+const PROPERTY_FIELDS = ["Country", "Region", "Variety", "Processing", "Producer", "Altitude"];
+const ALL_FIELDS = [...TITLE_FIELDS, ...PROPERTY_FIELDS];
+
+function emptyLot() {
+  const lot = {};
+  ALL_FIELDS.forEach((field) => { lot[field] = ""; });
+  return lot;
+}
+
+// Converts one raw CSV row into a canonical lot object using the column
+// mapping matchColumns resolved, cleaning each value as it's pulled out.
+function toCanonicalRow(row, columns) {
+  const lot = emptyLot();
+  ALL_FIELDS.forEach((field) => {
+    const sourceKey = columns[field];
+    lot[field] = sourceKey ? cleanField(row[sourceKey]) : "";
+  });
+  return lot;
+}
+
 // Drops a trailing unit/qualifier in parentheses, e.g. "Altitude (masl)" ->
 // "altitude", "Altitude (m)" -> "altitude", so headers that include units
 // still match the plain alias.
@@ -63,15 +88,17 @@ function countryFromCode(code) {
   return COUNTRY_CODES[prefix] || "";
 }
 
-function buildLines(row, columns, titleSize, bodySize) {
+// row is a canonical lot object (see emptyLot/toCanonicalRow) - every field
+// is read straight off it, no CSV column mapping needed.
+function buildLines(row, titleSize, bodySize) {
   const lines = [];
-  const code = columns.code ? cleanField(row[columns.code]) : "";
-  const name = columns.name ? cleanField(row[columns.name]) : "";
+  const code = cleanField(row.code);
+  const name = cleanField(row.name);
   if (code) lines.push({ text: code, bold: true, size: titleSize });
   if (name) lines.push({ text: name, bold: true, size: titleSize });
 
-  for (const label of ["Country", "Region", "Variety", "Processing", "Producer", "Altitude"]) {
-    let value = columns[label] ? cleanField(row[columns[label]]) : "";
+  for (const label of PROPERTY_FIELDS) {
+    let value = cleanField(row[label]);
     if (label === "Country") {
       value = value ? resolveCountry(value) : countryFromCode(code);
     }
