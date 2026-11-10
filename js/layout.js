@@ -56,17 +56,20 @@ function gridFromOptions(options) {
 // right at the bottom pad and then visually print past the sticker's edge.
 const DESCENDER_RATIO = 0.25;
 
-// opts: { center, titleBodyGap, padLeft, padTop, padRight, padBottom, noWrap }
-// all optional - omitted ones default to the sheet-mode look (left/top
-// anchored, fixed padding, wrapping allowed) so existing callers are
-// unaffected. Label mode passes center:true plus its own padding/gap to get
-// a centered block. Auto-fit also passes noWrap:true, so a line that would
-// need to wrap counts as overflow and the binary search picks a smaller
-// size instead - otherwise the "best fit" size could still wrap a line.
-// Manual font size leaves wrapping on, same as sheet mode: the size is
-// fixed by the user, so a long line just wraps rather than being flagged.
+// opts: { centerX, centerY, titleBodyGap, padLeft, padTop, padRight,
+// padBottom, noWrap } all optional - omitted ones default to the sheet-mode
+// look (left/top anchored, fixed padding, wrapping allowed) so existing
+// callers are unaffected. Label mode passes centerY:true plus its own
+// padding/gap to vertically center the block, while leaving each line
+// left-aligned (centerX left at its false default) rather than centered
+// horizontally. Auto-fit also passes noWrap:true, so a line that would need
+// to wrap counts as overflow and the binary search picks a smaller size
+// instead - otherwise the "best fit" size could still wrap a line. Manual
+// font size leaves wrapping on, same as sheet mode: the size is fixed by
+// the user, so a long line just wraps rather than being flagged.
 function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, opts = {}) {
-  const center = !!opts.center;
+  const centerX = !!opts.centerX;
+  const centerY = !!opts.centerY;
   const noWrap = !!opts.noWrap;
   const titleBodyGap = opts.titleBodyGap ?? TITLE_BODY_GAP;
   const padLeft = opts.padLeft ?? PAD_LEFT;
@@ -99,7 +102,7 @@ function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, op
         if (cutText === null) cutText = text;
         break;
       }
-      const dx = center ? (stickerW - doc.getTextWidth(wline)) / 2 : padLeft;
+      const dx = centerX ? (stickerW - doc.getTextWidth(wline)) / 2 : padLeft;
       placed.push({ text: wline, size, bold, y: cursorY, dx });
       cursorY += size * LINE_GAP;
     }
@@ -108,7 +111,7 @@ function layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, op
 
   // Shift the whole block down so it's vertically centered in the sticker,
   // instead of anchored to the top padding.
-  if (center && placed.length && !overflow) {
+  if (centerY && placed.length && !overflow) {
     const first = placed[0];
     const last = placed[placed.length - 1];
     const topEdge = first.y - first.size * 0.8;
@@ -142,7 +145,7 @@ const AUTO_FIT_SEARCH_STEPS = 18;
 const AUTO_FIT_PAD = PAD;
 
 function autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily) {
-  const padOpts = { center: true, noWrap: true, padLeft: AUTO_FIT_PAD, padTop: AUTO_FIT_PAD, padRight: AUTO_FIT_PAD, padBottom: AUTO_FIT_PAD };
+  const padOpts = { centerY: true, noWrap: true, padLeft: AUTO_FIT_PAD, padTop: AUTO_FIT_PAD, padRight: AUTO_FIT_PAD, padBottom: AUTO_FIT_PAD };
   function attempt(titleSize) {
     const bodySize = titleSize * AUTO_FIT_BODY_RATIO;
     const lines = buildLines(row, columns, titleSize, bodySize);
@@ -178,7 +181,7 @@ function labelLayoutFor(doc, stickerW, stickerH, row, columns, fontFamily, optio
   const { titleSize, bodySize } = options;
   const lines = buildLines(row, columns, titleSize, bodySize);
   const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
-    center: true,
+    centerY: true,
     titleBodyGap: titleSize * 0.3,
     padLeft: AUTO_FIT_PAD,
     padTop: AUTO_FIT_PAD,
