@@ -9,9 +9,20 @@ const UI_TEXT = {
   ja: { language:"言語", appTitle:"Saru's Sticker Generator", subtitle:"コーヒーロットのCSVをアップロードし、ステッカーの種類を選んで作成しましょう。", chooseCsv:"クリックしてCSVファイルを選択", orDrag:"またはここにドラッグ", csvOnly:"CSVファイルのみ", editLots:"ロットを手動で編集・追加", output:"出力形式", a4Sheet:"A4シート", thermalLabel:"感熱ラベル", font:"フォント", manualFontSize:"フォントサイズを手動で指定", titleSize:"タイトルサイズ (pt)", bodySize:"本文サイズ (pt)", labelSize:"ラベルサイズ", customSize:"カスタムサイズ", stickerWidth:"ステッカー幅 (mm)", stickerHeight:"ステッカー高さ (mm)", gapX:"横の間隔 (mm)", gapY:"縦の間隔 (mm)", copiesPerLot:"ロットごとの印刷枚数", reuseSheet:"使用済みの位置を指定して、使いかけのシートを再利用", chooseStickers:"使用可能なステッカーを選択", generatePdf:"PDFを作成", previewPdf:"PDFをプレビュー", editLotsHelp:"ロットを手動で追加・編集・削除できます。変更はすぐに反映されます。", addLot:"+ ロットを追加", done:"完了", pickerHelp:"ステッカーをクリックして、使用済み（スキップ）または使用可能に切り替えます。", markAllUsed:"すべて使用済みにする", markAllAvailable:"すべて使用可能にする", recognizedColumns:"認識された列", columnHelp:"大文字・小文字や列の順番は問いません。空欄の項目はステッカーごとに省略されます。", code:"コード", name:"名前", country:"国", region:"地域", variety:"品種", processing:"精製方法", producer:"生産者", altitude:"標高", lot:"ロット", quantity:"枚数", remove:"削除", decrease:"枚数を減らす", increase:"枚数を増やす", recognizedField:"認識した項目", csvColumn:"CSV列", ignoredColumns:"一致しないため無視した列：", parsing:"読み込み中：", csvParseError:"CSV解析エラー：", csvNoHeader:"CSVにヘッダー行がありません。", csvNoRows:"CSVにデータ行がありません。", readError:"ファイルを読み込めませんでした：", addLotToGenerate:"ステッカーを作成するには、CSVを読み込むかロットを追加してください。", setQuantity:"いずれかのロットの枚数を1以上にしてください。", sizeTooLarge:"ステッカーが大きすぎてA4に収まりません。幅・高さまたは間隔を小さくしてください。", previewGenerated:"プレビューを作成しました。", previewError:"プレビュー作成エラー：", pdfSaved:"PDFを保存しました。", pdfSavedOverflow:"PDFを保存しました。ただし{n}件のロットで文字が切れています。上の警告をご確認ください。", pdfError:"PDF作成エラー："
   }
 };
+UI_TEXT.ko = { ...UI_TEXT.en,
+  language:"언어", subtitle:"커피 로트 CSV를 업로드하고 스티커 종류를 선택해 스티커를 만들어 보세요.", chooseCsv:"클릭하여 CSV 파일 선택", orDrag:"또는 여기에 끌어다 놓기", csvOnly:"CSV 파일만 가능", editLots:"로트 직접 편집 / 추가", output:"출력", a4Sheet:"A4 시트", thermalLabel:"감열 라벨", font:"글꼴", manualFontSize:"글꼴 크기 직접 설정", titleSize:"제목 크기 (pt)", bodySize:"본문 크기 (pt)", labelSize:"라벨 크기", customSize:"사용자 지정 크기", stickerWidth:"스티커 너비 (mm)", stickerHeight:"스티커 높이 (mm)", gapX:"가로 간격 (mm)", gapY:"세로 간격 (mm)", copiesPerLot:"로트별 인쇄 수량", reuseSheet:"사용한 스티커 위치를 표시해 남은 시트 재사용", chooseStickers:"사용 가능한 스티커 선택", generatePdf:"PDF 만들기", previewPdf:"PDF 미리보기", editLotsTitle:"로트 편집", editLotsHelp:"로트를 직접 추가, 편집 또는 삭제할 수 있습니다. 변경 사항은 즉시 적용됩니다.", addLot:"+ 로트 추가", done:"완료", pickerHelp:"스티커를 클릭해 사용됨(건너뜀) 또는 사용 가능으로 표시하세요.", markAllUsed:"모두 사용됨으로 표시", markAllAvailable:"모두 사용 가능으로 표시", recognizedColumns:"인식된 열", columnHelp:"대소문자와 열 순서는 상관없습니다. 비어 있는 항목은 스티커에서 생략됩니다.", code:"코드", name:"이름", country:"국가", region:"지역", variety:"품종", processing:"가공 방식", producer:"생산자", altitude:"고도", lot:"로트", quantity:"수량", remove:"삭제", decrease:"수량 줄이기", increase:"수량 늘리기", recognizedField:"인식된 항목", csvColumn:"CSV 열", ignoredColumns:"일치하지 않아 무시된 열: ", parsing:"파일 분석 중: ", csvParseError:"CSV 분석 오류: ", csvNoHeader:"CSV에 헤더 행이 없습니다.", csvNoRows:"CSV에 데이터 행이 없습니다.", readError:"파일을 읽지 못했습니다: ", addLotToGenerate:"스티커를 만들려면 CSV를 불러오거나 로트를 하나 이상 추가하세요.", setQuantity:"하나 이상의 로트 수량을 1 이상으로 설정하세요.", sizeTooLarge:"스티커가 너무 커서 A4에 들어가지 않습니다. 너비, 높이 또는 간격을 줄이세요.", previewGenerated:"미리보기를 만들었습니다.", previewError:"미리보기 생성 오류: ", pdfSaved:"PDF를 저장했습니다.", pdfSavedOverflow:"PDF를 저장했습니다. 단, {n}개 로트의 텍스트가 잘렸습니다. 위 경고를 확인하세요.", pdfError:"PDF 생성 오류: ", loaded:"불러옴: ", lotsSuffix:"개 로트 → ", labelsTotal:"개 라벨", stickersSuffix:"개 스티커, 총 ", pagesSuffix:"페이지", gridSuffix:" 격자, ", perPageSuffix:"개/페이지", usedOnSheetSuffix:"개 사용됨 (첫 번째 시트)", lotFallback:"(이름 없는 행)", warningFit:"{n}개 로트의 텍스트가 현재 글꼴 크기에 맞지 않아 일부가 잘릴 수 있습니다.", warningFitHelp:"글꼴 크기를 줄이거나 만들기 전에 미리보기를 확인하세요."
+};
+UI_TEXT.es = { ...UI_TEXT.en,
+  language:"Idioma", subtitle:"Sube un CSV de lotes de café, elige el tipo de pegatina y crea tus pegatinas.", chooseCsv:"Haz clic para elegir un archivo CSV", orDrag:"o arrástralo aquí", csvOnly:"Solo archivos CSV", editLots:"Editar / añadir lotes manualmente", output:"Formato de salida", a4Sheet:"Hoja A4", thermalLabel:"Etiqueta térmica", font:"Fuente", manualFontSize:"Tamaño de fuente manual", titleSize:"Tamaño del título (pt)", bodySize:"Tamaño del texto (pt)", labelSize:"Tamaño de etiqueta", customSize:"Tamaño personalizado", stickerWidth:"Ancho de pegatina (mm)", stickerHeight:"Alto de pegatina (mm)", gapX:"Separación horizontal (mm)", gapY:"Separación vertical (mm)", copiesPerLot:"Copias por lote", reuseSheet:"Reutilizar una hoja empezada (marca las pegatinas ya usadas)", chooseStickers:"Elegir pegatinas disponibles", generatePdf:"Generar PDF", previewPdf:"Vista previa del PDF", editLotsTitle:"Editar lotes", editLotsHelp:"Añade, edita o elimina lotes manualmente. Los cambios se aplican de inmediato.", addLot:"+ Añadir lote", done:"Listo", pickerHelp:"Haz clic en una pegatina para marcarla como usada (se omite) o disponible.", markAllUsed:"Marcar todas como usadas", markAllAvailable:"Marcar todas como disponibles", recognizedColumns:"Columnas reconocidas", columnHelp:"No distingue mayúsculas y minúsculas ni importa el orden. Los campos vacíos se omiten en cada pegatina.", code:"Código", name:"Nombre", country:"País", region:"Región", variety:"Variedad", processing:"Procesamiento", producer:"Productor", altitude:"Altitud", lot:"Lote", quantity:"Cantidad", remove:"Eliminar", decrease:"Reducir cantidad", increase:"Aumentar cantidad", recognizedField:"Campo reconocido", csvColumn:"Columna CSV", ignoredColumns:"Columnas ignoradas (sin coincidencia): ", parsing:"Procesando ", csvParseError:"Error al analizar el CSV: ", csvNoHeader:"El CSV no tiene una fila de encabezados.", csvNoRows:"El CSV no tiene filas de datos.", readError:"No se pudo leer el archivo: ", addLotToGenerate:"Añade al menos un lote mediante un CSV o la edición manual para generar pegatinas.", setQuantity:"Asigna una cantidad mayor que 0 a algún lote.", sizeTooLarge:"La pegatina es demasiado grande para caber en una página A4. Reduce el ancho, el alto o el espacio.", previewGenerated:"Vista previa generada.", previewError:"Error al generar la vista previa: ", pdfSaved:"PDF guardado.", pdfSavedOverflow:"PDF guardado, pero el texto de {n} lote(s) quedó cortado. Consulta el aviso anterior.", pdfError:"Error al generar el PDF: ", loaded:"Cargados ", lotsSuffix:" lote(s) → ", labelsTotal:" etiqueta(s) en total.", stickersSuffix:" pegatina(s) en ", pagesSuffix:" página(s)", gridSuffix:" cuadrícula, ", perPageSuffix:" por página", usedOnSheetSuffix:" ya usadas en la primera hoja", lotFallback:"(fila sin nombre)", warningFit:"El texto de {n} lote(s) no cabe con este tamaño de fuente y puede quedar cortado.", warningFitHelp:"Prueba con una fuente más pequeña o revisa la vista previa antes de generar el PDF."
+};
 Object.assign(UI_TEXT.en, { editLotsTitle:"Edit Lots", loaded:"Loaded", lotsSuffix:" lot(s) → ", labelsTotal:" label(s) total.", stickersSuffix:" sticker(s) across ", pagesSuffix:" page(s)", gridSuffix:" grid, ", perPageSuffix:" per page", usedOnSheetSuffix:" already used on sheet 1", lotFallback:"(unlabeled row)" });
 Object.assign(UI_TEXT.ja, { editLotsTitle:"ロットを編集", loaded:"読み込み完了：", lotsSuffix:"件のロット → ", labelsTotal:"枚のラベル", stickersSuffix:"枚のステッカー、全", pagesSuffix:"ページ", gridSuffix:"グリッド、", perPageSuffix:"枚/ページ", usedOnSheetSuffix:"枚使用済み（1枚目）", lotFallback:"（名前なし）" });
-let uiLanguage = localStorage.getItem("stickerUiLanguage") === "ja" ? "ja" : "en";
+Object.assign(UI_TEXT.en, { warningFit:"{n} lot(s) may not fit at this font size, so some text could be cut off.", warningFitHelp:"Try a smaller font size, or check the preview before generating." });
+Object.assign(UI_TEXT.ja, { warningFit:"{n}件のロットが設定したフォントサイズに収まらず、一部の文字が切れる可能性があります。", warningFitHelp:"フォントサイズを小さくするか、作成前にプレビューをご確認ください。" });
+Object.assign(UI_TEXT.ko, { editLotsTitle:"로트 편집", warningFit:"{n}개 로트의 텍스트가 현재 글꼴 크기에 맞지 않아 일부가 잘릴 수 있습니다.", warningFitHelp:"글꼴 크기를 줄이거나 만들기 전에 미리보기를 확인하세요." });
+Object.assign(UI_TEXT.es, { editLotsTitle:"Editar lotes", warningFit:"El texto de {n} lote(s) no cabe con este tamaño de fuente y puede quedar cortado.", warningFitHelp:"Prueba con una fuente más pequeña o revisa la vista previa antes de generar el PDF." });
+const savedUiLanguage = localStorage.getItem("stickerUiLanguage");
+let uiLanguage = UI_TEXT[savedUiLanguage] ? savedUiLanguage : "en";
 function tr(key) { return (UI_TEXT[uiLanguage] && UI_TEXT[uiLanguage][key]) || UI_TEXT.en[key] || key; }
 function applyLanguage() {
   document.documentElement.lang = uiLanguage;
@@ -19,13 +30,19 @@ function applyLanguage() {
   document.getElementById("languageToggle").setAttribute("aria-label", tr("language"));
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = tr(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = tr(el.dataset.i18nTitle); });
-  document.getElementById("languageToggle").setAttribute("aria-checked", String(uiLanguage === "ja"));
+  const languageToggle = document.getElementById("languageToggle");
+  languageToggle.className = `language-toggle language-${uiLanguage}`;
+  languageToggle.querySelectorAll("[data-language]").forEach(button => {
+    button.setAttribute("aria-pressed", String(button.dataset.language === uiLanguage));
+  });
   renderQuantityTable();
   if (parsedRows) renderLotModalTable();
   if (parsedRows) runFitCheck();
 }
-document.getElementById("languageToggle").addEventListener("click", () => {
-  uiLanguage = uiLanguage === "en" ? "ja" : "en";
+document.getElementById("languageToggle").addEventListener("click", e => {
+  const languageButton = e.target.closest("[data-language]");
+  if (!languageButton) return;
+  uiLanguage = languageButton.dataset.language;
   localStorage.setItem("stickerUiLanguage", uiLanguage);
   applyLanguage();
 });
@@ -102,9 +119,8 @@ function renderFitWarnings(report) {
     })
     .join("");
   warningsEl.innerHTML =
-    `<strong>${uiLanguage === "ja" ? `${overflowing.length}件のロットが設定したフォントサイズに収まりません。一部の文字が切れる可能性があります：` : `${overflowing.length} lot(s) won't fully fit at this font/size — some text may be cut off:`}</strong>` +
-    `<ul>${items}</ul>` +
-    (uiLanguage === "ja" ? "フォントサイズを小さくするか、作成前にプレビューをご確認ください。" : "Try a smaller font size, or use Preview to check before generating.");
+    `<strong>${tr("warningFit").replace("{n}", overflowing.length)}</strong>` +
+    `<ul>${items}</ul>` + tr("warningFitHelp");
   warningsEl.className = "warn";
 }
 
