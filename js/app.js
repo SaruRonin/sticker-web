@@ -209,10 +209,11 @@ document.getElementById("quantityTable").addEventListener("input", (e) => {
 });
 
 // Sticker Saver: the "reuse a partially-used sheet" cell picker (sheet
-// mode only). Keeps usedCells sized to the current grid, resetting it
-// (not preserving stale picks) whenever the grid's cols/rows actually
-// change - a saved pattern from a 3x7 grid wouldn't make sense mapped onto
-// a 2x4 one.
+// mode only), shown in its own popup so the grid of stickers - which can
+// get large for small sticker sizes - doesn't crowd the main page. Keeps
+// usedCells sized to the current grid, resetting it (not preserving stale
+// picks) whenever the grid's cols/rows actually change - a saved pattern
+// from a 3x7 grid wouldn't make sense mapped onto a 2x4 one.
 function reuseEnabled() {
   return document.getElementById("reusePartialSheet").checked;
 }
@@ -236,13 +237,31 @@ function syncCellPicker() {
     cellPickerRows = grid.rows;
     usedCells = new Array(grid.cols * grid.rows).fill(false);
   }
+}
+
+const cellPickerModalOverlay = document.getElementById("cellPickerModalOverlay");
+
+function openCellPickerModal() {
+  syncCellPicker();
   renderCellPickerGrid();
+  cellPickerModalOverlay.style.display = "flex";
+}
+
+function closeCellPickerModal() {
+  cellPickerModalOverlay.style.display = "none";
+  runFitCheck();
 }
 
 document.getElementById("reusePartialSheet").addEventListener("change", (e) => {
-  document.getElementById("cellPickerWrap").style.display = e.target.checked ? "" : "none";
-  if (e.target.checked) syncCellPicker();
+  document.getElementById("cellPickerToggleWrap").style.display = e.target.checked ? "" : "none";
+  if (e.target.checked) openCellPickerModal();
   runFitCheck();
+});
+
+document.getElementById("openCellPickerBtn").addEventListener("click", openCellPickerModal);
+document.getElementById("closeCellPickerModalBtn").addEventListener("click", closeCellPickerModal);
+cellPickerModalOverlay.addEventListener("click", (e) => {
+  if (e.target === cellPickerModalOverlay) closeCellPickerModal(); // clicked the backdrop, not the box
 });
 
 document.getElementById("cellPickerGrid").addEventListener("click", (e) => {

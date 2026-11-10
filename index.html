@@ -101,12 +101,8 @@
     <input type="checkbox" id="reusePartialSheet">
     Reuse a partially-used sheet (mark which stickers are already gone)
   </label>
-  <div id="cellPickerWrap" style="display:none;">
-    <div class="picker-actions">
-      <button type="button" id="markAllUsedBtn" class="secondary">Mark all used</button>
-      <button type="button" id="markAllAvailableBtn" class="secondary">Mark all available</button>
-    </div>
-    <div id="cellPickerGrid" class="cell-picker-grid"></div>
+  <div id="cellPickerToggleWrap" style="display:none;">
+    <button type="button" id="openCellPickerBtn" class="secondary">Choose Available Stickers</button>
   </div>
 </div>
 
@@ -135,6 +131,21 @@
     <div class="modal-actions">
       <button type="button" id="addLotBtn" class="secondary">+ Add lot</button>
       <button type="button" id="closeLotModalBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="cellPickerModalOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>Choose Available Stickers</h2>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0;">Click a sticker to mark it already used (skipped) or still available.</p>
+    <div class="picker-actions">
+      <button type="button" id="markAllUsedBtn" class="secondary">Mark all used</button>
+      <button type="button" id="markAllAvailableBtn" class="secondary">Mark all available</button>
+    </div>
+    <div id="cellPickerGrid" class="cell-picker-grid"></div>
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" id="closeCellPickerModalBtn">Done</button>
     </div>
   </div>
 </div>
