@@ -107,12 +107,16 @@ async function runFitCheck() {
     warningsEl.className = "";
     return;
   }
-  generateBtn.disabled = false;
-  previewBtn.disabled = false;
+  const perPage = grid.cols * grid.rows;
+  const totalStickers = quantities.reduce((sum, q) => sum + (q || 0), 0);
+  generateBtn.disabled = totalStickers <= 0;
+  previewBtn.disabled = totalStickers <= 0;
   setStatus(
-    `Loaded ${parsedRows.length} lot(s) → ${parsedRows.length} page(s), ` +
-      `${parsedRows.length * grid.cols * grid.rows} stickers total (${grid.cols}×${grid.rows} grid).`,
-    "ok"
+    totalStickers > 0
+      ? `Loaded ${parsedRows.length} lot(s) → ${totalStickers} sticker(s) across ` +
+        `${Math.ceil(totalStickers / perPage)} page(s) (${grid.cols}×${grid.rows} grid, ${perPage} per page).`
+      : "Set a quantity greater than 0 for at least one lot.",
+    totalStickers > 0 ? "ok" : "error"
   );
   renderFitWarnings(await checkFit(parsedRows, options));
 }
@@ -142,13 +146,16 @@ function applyLabelPreset(presetId) {
 
 document.getElementById("labelPreset").addEventListener("change", (e) => applyLabelPreset(e.target.value));
 
-// Renders the per-lot quantity inputs (label mode only). The container div
-// itself is never replaced, just its contents, so the single delegated
-// "input" listener registered below keeps working across re-renders.
+// Renders the per-lot quantity inputs - used by both output modes now:
+// label mode prints exactly that many labels per lot, and sheet mode packs
+// that many copies of each lot into the shared grid instead of always
+// giving every lot a full page. The container div itself is never
+// replaced, just its contents, so the single delegated "input" listener
+// registered below keeps working across re-renders.
 function renderQuantityTable() {
   const section = document.getElementById("quantitySection");
   const container = document.getElementById("quantityTable");
-  if (currentMode() !== "label" || !parsedRows) {
+  if (!parsedRows || parsedRows.length === 0) {
     section.style.display = "none";
     container.innerHTML = "";
     return;
@@ -377,7 +384,7 @@ async function buildCurrentDoc() {
   const options = getOptions();
   return currentMode() === "label"
     ? buildLabelDoc(parsedRows, quantities, options)
-    : buildDoc(parsedRows, options);
+    : buildDoc(parsedRows, quantities, options);
 }
 
 previewBtn.addEventListener("click", async () => {

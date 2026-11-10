@@ -64,8 +64,13 @@ async function savePdf(doc) {
 }
 
 // Builds the full PDF and returns it along with a report of any lots whose
-// content didn't fully fit in their sticker cell.
-async function buildDoc(rows, options) {
+// content didn't fully fit in their sticker cell. Each lot contributes
+// `quantities[i]` copies (not a full page each) to one continuous sequence
+// of stickers, which fills the grid left-to-right/top-to-bottom and only
+// starts a new page once the current one's cells are full - so a handful
+// of 2-3-copy lots can share a single sheet instead of each claiming a
+// whole page of 21.
+async function buildDoc(rows, quantities, options) {
   const { fontFamily, titleSize, bodySize, stickerWidthMm, stickerHeightMm, gapXMm, gapYMm } = options;
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const resolvedFamily = await ensureFont(doc, fontFamily);
@@ -82,25 +87,38 @@ async function buildDoc(rows, options) {
   const perPage = cols * gridRows;
   const overflowReport = [];
 
+  // Lay out each lot's content once, then repeat the result `quantities[i]`
+  // times in the sequence below - laying out the same text twice would be
+  // wasted work and (for autoFitLayout-style callers) could in principle
+  // pick a different size each time.
+  const sequence = [];
   rows.forEach((row, idx) => {
-    if (idx > 0) doc.addPage();
     const code = cleanField(row.code);
     const name = cleanField(row.name);
     const lines = buildLines(row, titleSize, bodySize);
     const { placed, overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
-
-    for (let i = 0; i < perPage; i++) {
-      const col = i % cols;
-      const r = Math.floor(i / cols);
-      const x = marginX + col * (stickerW + gapX);
-      const yTop = marginY + r * (stickerH + gapY);
-      drawSticker(doc, x, yTop, placed, resolvedFamily);
-    }
-
     if (overflow) overflowReport.push({ code, name, cutText, overflow: true });
+
+    const qty = Math.max(0, Math.round(quantities[idx] ?? 0));
+    for (let i = 0; i < qty; i++) sequence.push(placed);
   });
 
-  return { doc, overflowReport, cols, rows: gridRows };
+  if (sequence.length === 0) {
+    throw new Error("Set a quantity greater than 0 for at least one lot.");
+  }
+
+  sequence.forEach((placed, i) => {
+    const posInPage = i % perPage;
+    if (i > 0 && posInPage === 0) doc.addPage();
+    const col = posInPage % cols;
+    const r = Math.floor(posInPage / cols);
+    const x = marginX + col * (stickerW + gapX);
+    const yTop = marginY + r * (stickerH + gapY);
+    drawSticker(doc, x, yTop, placed, resolvedFamily);
+  });
+
+  const totalPages = Math.ceil(sequence.length / perPage);
+  return { doc, overflowReport, cols, rows: gridRows, perPage, totalStickers: sequence.length, totalPages };
 }
 
 // Builds a document for a thermal label printer: one page per physical
