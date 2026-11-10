@@ -44,7 +44,7 @@
     border: 1px solid rgba(244, 196, 48, 0.18);
   }
   h1 { font-size: 1.4rem; margin-bottom: 0.25rem; color: var(--gold-bright); text-align: center; }
-  p.sub { color: var(--text-muted); margin-top: 0; }
+  p.sub { color: var(--text-muted); margin-top: 0; text-align: center; }
   .drop {
     border: 2px dashed #6b4aa0;
     border-radius: 10px;
@@ -200,7 +200,7 @@
 <div class="card">
 
 <h1>Saru's Sticker Generator</h1>
-<p class="sub" id="subText">Upload a CSV of coffee lots. Each row becomes its own A4 page, filled edge-to-edge with as many identical stickers as fit the size below.</p>
+<p class="sub" id="subText">Upload a CSV of Coffee Lots. Choose your Sticker type and sticker away!</p>
 
 <div class="drop" id="drop">
   <p><strong>Click to choose a CSV file</strong> or drag it here</p>
@@ -921,10 +921,6 @@ function setOutputMode(mode) {
   document.querySelectorAll(".sheet-only").forEach((el) => {
     el.style.display = mode === "label" ? "none" : "";
   });
-  document.getElementById("subText").textContent =
-    mode === "label"
-      ? "Upload a CSV of coffee lots. Each lot becomes its own label, sized exactly to the sticker size below, with text auto-sized and centered to fill it — set how many copies of each lot you need."
-      : "Upload a CSV of coffee lots. Each row becomes its own A4 page, filled edge-to-edge with as many identical stickers as fit the size below.";
   applyLabelPreset(document.getElementById("labelPreset").value); // also runs the fit check
   renderQuantityTable();
 }
