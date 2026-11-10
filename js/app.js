@@ -2,6 +2,34 @@
 // preview/generate actions. Depends on everything else (country-codes.js,
 // csv.js, layout.js, fonts.js, pdf.js), all loaded before this file.
 
+const UI_TEXT = {
+  en: { language:"Language", appTitle:"Saru's Sticker Generator", subtitle:"Upload a CSV of Coffee Lots. Choose your Sticker type and sticker away!", chooseCsv:"Click to choose a CSV file", orDrag:"or drag it here", csvOnly:".csv only", editLots:"Edit / Add Lots Manually", output:"Output", a4Sheet:"A4 Sheet", thermalLabel:"Thermal Label", font:"Font", manualFontSize:"Manual font size", titleSize:"Title size (pt)", bodySize:"Body size (pt)", labelSize:"Label size", customSize:"Custom size", stickerWidth:"Sticker width (mm)", stickerHeight:"Sticker height (mm)", gapX:"Gap X (mm)", gapY:"Gap Y (mm)", copiesPerLot:"Copies per lot", reuseSheet:"Reuse a partially-used sheet (mark which stickers are already gone)", chooseStickers:"Choose Available Stickers", generatePdf:"Generate PDF", previewPdf:"Preview PDF", editLotsHelp:"Add, edit, or remove lots by hand - changes apply immediately.", addLot:"+ Add lot", done:"Done", pickerHelp:"Click a sticker to mark it already used (skipped) or still available.", markAllUsed:"Mark all used", markAllAvailable:"Mark all available", recognizedColumns:"Recognized columns", columnHelp:"Case-insensitive, any order; missing/blank fields are skipped per sticker.",
+    code:"Code", name:"Name", country:"Country", region:"Region", variety:"Variety", processing:"Processing", producer:"Producer", altitude:"Altitude", lot:"Lot", quantity:"Quantity", remove:"Remove", decrease:"Decrease quantity", increase:"Increase quantity", recognizedField:"Recognized field", csvColumn:"CSV column", ignoredColumns:"Ignored columns (no match): ", parsing:"Parsing", csvParseError:"CSV parse error: ", csvNoHeader:"CSV has no header row.", csvNoRows:"CSV has no data rows.", readError:"Failed to read file: ", addLotToGenerate:"Add at least one lot (via CSV or Edit Lots) to generate stickers.", setQuantity:"Set a quantity greater than 0 for at least one lot.", sizeTooLarge:"Sticker size (with gaps) is too large to fit on an A4 page — reduce the width/height or gaps.", previewGenerated:"Preview generated.", previewError:"Error generating preview: ", pdfSaved:"PDF saved.", pdfSavedOverflow:"PDF saved — but {n} lot(s) had text cut off, see warning above.", pdfError:"Error generating PDF: ",
+  },
+  ja: { language:"言語", appTitle:"Saru's Sticker Generator", subtitle:"コーヒーロットのCSVをアップロードし、ステッカーの種類を選んで作成しましょう。", chooseCsv:"クリックしてCSVファイルを選択", orDrag:"またはここにドラッグ", csvOnly:"CSVファイルのみ", editLots:"ロットを手動で編集・追加", output:"出力形式", a4Sheet:"A4シート", thermalLabel:"感熱ラベル", font:"フォント", manualFontSize:"フォントサイズを手動で指定", titleSize:"タイトルサイズ (pt)", bodySize:"本文サイズ (pt)", labelSize:"ラベルサイズ", customSize:"カスタムサイズ", stickerWidth:"ステッカー幅 (mm)", stickerHeight:"ステッカー高さ (mm)", gapX:"横の間隔 (mm)", gapY:"縦の間隔 (mm)", copiesPerLot:"ロットごとの印刷枚数", reuseSheet:"使用済みの位置を指定して、使いかけのシートを再利用", chooseStickers:"使用可能なステッカーを選択", generatePdf:"PDFを作成", previewPdf:"PDFをプレビュー", editLotsHelp:"ロットを手動で追加・編集・削除できます。変更はすぐに反映されます。", addLot:"+ ロットを追加", done:"完了", pickerHelp:"ステッカーをクリックして、使用済み（スキップ）または使用可能に切り替えます。", markAllUsed:"すべて使用済みにする", markAllAvailable:"すべて使用可能にする", recognizedColumns:"認識された列", columnHelp:"大文字・小文字や列の順番は問いません。空欄の項目はステッカーごとに省略されます。", code:"コード", name:"名前", country:"国", region:"地域", variety:"品種", processing:"精製方法", producer:"生産者", altitude:"標高", lot:"ロット", quantity:"枚数", remove:"削除", decrease:"枚数を減らす", increase:"枚数を増やす", recognizedField:"認識した項目", csvColumn:"CSV列", ignoredColumns:"一致しないため無視した列：", parsing:"読み込み中：", csvParseError:"CSV解析エラー：", csvNoHeader:"CSVにヘッダー行がありません。", csvNoRows:"CSVにデータ行がありません。", readError:"ファイルを読み込めませんでした：", addLotToGenerate:"ステッカーを作成するには、CSVを読み込むかロットを追加してください。", setQuantity:"いずれかのロットの枚数を1以上にしてください。", sizeTooLarge:"ステッカーが大きすぎてA4に収まりません。幅・高さまたは間隔を小さくしてください。", previewGenerated:"プレビューを作成しました。", previewError:"プレビュー作成エラー：", pdfSaved:"PDFを保存しました。", pdfSavedOverflow:"PDFを保存しました。ただし{n}件のロットで文字が切れています。上の警告をご確認ください。", pdfError:"PDF作成エラー："
+  }
+};
+Object.assign(UI_TEXT.en, { editLotsTitle:"Edit Lots", loaded:"Loaded", lotsSuffix:" lot(s) → ", labelsTotal:" label(s) total.", stickersSuffix:" sticker(s) across ", pagesSuffix:" page(s)", gridSuffix:" grid, ", perPageSuffix:" per page", usedOnSheetSuffix:" already used on sheet 1", lotFallback:"(unlabeled row)" });
+Object.assign(UI_TEXT.ja, { editLotsTitle:"ロットを編集", loaded:"読み込み完了：", lotsSuffix:"件のロット → ", labelsTotal:"枚のラベル", stickersSuffix:"枚のステッカー、全", pagesSuffix:"ページ", gridSuffix:"グリッド、", perPageSuffix:"枚/ページ", usedOnSheetSuffix:"枚使用済み（1枚目）", lotFallback:"（名前なし）" });
+let uiLanguage = localStorage.getItem("stickerUiLanguage") === "ja" ? "ja" : "en";
+function tr(key) { return (UI_TEXT[uiLanguage] && UI_TEXT[uiLanguage][key]) || UI_TEXT.en[key] || key; }
+function applyLanguage() {
+  document.documentElement.lang = uiLanguage;
+  document.title = tr("appTitle");
+  document.getElementById("languageSelect").setAttribute("aria-label", tr("language"));
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = tr(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = tr(el.dataset.i18nTitle); });
+  document.getElementById("languageSelect").value = uiLanguage;
+  renderQuantityTable();
+  if (parsedRows) renderLotModalTable();
+  if (parsedRows) runFitCheck();
+}
+document.getElementById("languageSelect").addEventListener("change", e => {
+  uiLanguage = e.target.value;
+  localStorage.setItem("stickerUiLanguage", uiLanguage);
+  applyLanguage();
+});
+
 const dropEl = document.getElementById("drop");
 const fileInput = document.getElementById("fileInput");
 const generateBtn = document.getElementById("generateBtn");
@@ -69,14 +97,14 @@ function renderFitWarnings(report) {
   }
   const items = overflowing
     .map((r) => {
-      const label = r.code || r.name || "(unlabeled row)";
+      const label = r.code || r.name || tr("lotFallback");
       return `<li><strong>${escapeHtml(label)}</strong> — cut off at: "${escapeHtml(r.cutText)}"</li>`;
     })
     .join("");
   warningsEl.innerHTML =
-    `<strong>${overflowing.length} lot(s) won't fully fit</strong> at this font/size — some text will be cut off:` +
+    `<strong>${uiLanguage === "ja" ? `${overflowing.length}件のロットが設定したフォントサイズに収まりません。一部の文字が切れる可能性があります：` : `${overflowing.length} lot(s) won't fully fit at this font/size — some text may be cut off:`}</strong>` +
     `<ul>${items}</ul>` +
-    `Try a smaller font size, or use Preview to check before generating.`;
+    (uiLanguage === "ja" ? "フォントサイズを小さくするか、作成前にプレビューをご確認ください。" : "Try a smaller font size, or use Preview to check before generating.");
   warningsEl.className = "warn";
 }
 
@@ -87,7 +115,7 @@ async function runFitCheck() {
   if (parsedRows.length === 0) {
     generateBtn.disabled = true;
     previewBtn.disabled = true;
-    setStatus("Add at least one lot (via CSV or Edit Lots) to generate stickers.", "error");
+    setStatus(tr("addLotToGenerate"), "error");
     warningsEl.innerHTML = "";
     warningsEl.className = "";
     return;
@@ -99,8 +127,8 @@ async function runFitCheck() {
     previewBtn.disabled = totalLabels <= 0;
     setStatus(
       totalLabels > 0
-        ? `Loaded ${parsedRows.length} lot(s) → ${totalLabels} label(s) total.`
-        : "Set a quantity greater than 0 for at least one lot.",
+        ? `${tr("loaded")} ${parsedRows.length}${tr("lotsSuffix")}${totalLabels}${tr("labelsTotal")}`
+        : tr("setQuantity"),
       totalLabels > 0 ? "ok" : "error"
     );
     renderFitWarnings(await checkFitLabel(parsedRows, options));
@@ -109,7 +137,7 @@ async function runFitCheck() {
 
   const grid = gridFromOptions(options);
   if (grid.cols < 1 || grid.rows < 1) {
-    setStatus("Sticker size (with gaps) is too large to fit on an A4 page — reduce the width/height or gaps.", "error");
+    setStatus(tr("sizeTooLarge"), "error");
     generateBtn.disabled = true;
     previewBtn.disabled = true;
     warningsEl.innerHTML = "";
@@ -125,10 +153,10 @@ async function runFitCheck() {
   previewBtn.disabled = totalStickers <= 0;
   setStatus(
     totalStickers > 0
-      ? `Loaded ${parsedRows.length} lot(s) → ${totalStickers} sticker(s) across ` +
-        `${totalPages} page(s) (${grid.cols}×${grid.rows} grid, ${perPage} per page` +
-        (usedOnFirstPage > 0 ? `, ${usedOnFirstPage} already used on sheet 1` : "") + ")."
-      : "Set a quantity greater than 0 for at least one lot.",
+      ? `${tr("loaded")} ${parsedRows.length}${tr("lotsSuffix")}${totalStickers}${tr("stickersSuffix")}` +
+        `${totalPages}${tr("pagesSuffix")} (${grid.cols}×${grid.rows}${tr("gridSuffix")}${perPage}${tr("perPageSuffix")}` +
+        (usedOnFirstPage > 0 ? `, ${usedOnFirstPage}${tr("usedOnSheetSuffix")}` : "") + ")."
+      : tr("setQuantity"),
     totalStickers > 0 ? "ok" : "error"
   );
   renderFitWarnings(await checkFit(parsedRows, options));
@@ -174,16 +202,16 @@ function renderQuantityTable() {
     return;
   }
   section.style.display = "";
-  let html = "<table><tr><th>Lot</th><th>Quantity</th></tr>";
+  let html = `<table><tr><th>${tr("lot")}</th><th>${tr("quantity")}</th></tr>`;
   parsedRows.forEach((row, idx) => {
     const code = cleanField(row.code);
     const name = cleanField(row.name);
     const label = escapeHtml(code || name || `Row ${idx + 1}`);
     html += `<tr><td>${label}</td><td>
       <div class="qtyStepper">
-        <button type="button" class="qtyBtn" data-action="dec" data-idx="${idx}" aria-label="Decrease quantity">-</button>
+        <button type="button" class="qtyBtn" data-action="dec" data-idx="${idx}" aria-label="${tr("decrease")}">-</button>
         <input type="number" class="qtyInput" data-idx="${idx}" min="0" step="1" value="${quantities[idx] ?? 1}">
-        <button type="button" class="qtyBtn" data-action="inc" data-idx="${idx}" aria-label="Increase quantity">+</button>
+        <button type="button" class="qtyBtn" data-action="inc" data-idx="${idx}" aria-label="${tr("increase")}">+</button>
       </div>
     </td></tr>`;
   });
@@ -294,19 +322,19 @@ document.getElementById("markAllAvailableBtn").addEventListener("click", () => {
 // whatever its origin, is the same canonical shape (see emptyLot in
 // csv.js), so the modal and the rest of the app share one data model.
 const LOT_FIELD_LABELS = [
-  ["code", "Code"], ["name", "Name"], ["Country", "Country"], ["Region", "Region"],
-  ["Variety", "Variety"], ["Processing", "Processing"], ["Producer", "Producer"], ["Altitude", "Altitude"],
+  ["code", "code"], ["name", "name"], ["Country", "country"], ["Region", "region"],
+  ["Variety", "variety"], ["Processing", "processing"], ["Producer", "producer"], ["Altitude", "altitude"],
 ];
 const lotModalOverlay = document.getElementById("lotModalOverlay");
 const lotModalTable = document.getElementById("lotModalTable");
 
 function renderLotModalTable() {
-  let html = "<tr>" + LOT_FIELD_LABELS.map(([, label]) => `<th>${label}</th>`).join("") + "<th></th></tr>";
+  let html = "<tr>" + LOT_FIELD_LABELS.map(([, label]) => `<th>${tr(label)}</th>`).join("") + `<th>${tr("remove")}</th></tr>`;
   parsedRows.forEach((row, idx) => {
     html += "<tr>" + LOT_FIELD_LABELS.map(([field]) =>
       `<td><input type="text" class="lotField" data-idx="${idx}" data-field="${field}" value="${escapeAttr(row[field] || "")}"></td>`
     ).join("");
-    html += `<td><button type="button" class="removeLotBtn" data-idx="${idx}">Remove</button></td></tr>`;
+    html += `<td><button type="button" class="removeLotBtn" data-idx="${idx}">${tr("remove")}</button></td></tr>`;
   });
   lotModalTable.innerHTML = html;
 }
@@ -404,10 +432,11 @@ document.getElementById("manualFontSize").addEventListener("change", () => {
   runFitCheck();
 });
 setOutputMode(outputModeValue);
+applyLanguage();
 
 function handleFile(file) {
   if (!file) return;
-  setStatus("Parsing " + file.name + "...");
+  setStatus(tr("parsing") + file.name + "...");
   generateBtn.disabled = true;
   previewBtn.disabled = true;
   previewEl.innerHTML = "";
@@ -423,18 +452,18 @@ function handleFile(file) {
         (e) => e.code !== "UndetectableDelimiter"
       );
       if (fatalErrors.length) {
-        setStatus("CSV parse error: " + fatalErrors[0].message, "error");
+        setStatus(tr("csvParseError") + fatalErrors[0].message, "error");
         return;
       }
       const fieldnames = results.meta.fields || [];
       if (!fieldnames.length) {
-        setStatus("CSV has no header row.", "error");
+        setStatus(tr("csvNoHeader"), "error");
         return;
       }
       const columns = matchColumns(fieldnames);
       const rows = results.data;
       if (!rows.length) {
-        setStatus("CSV has no data rows.", "error");
+        setStatus(tr("csvNoRows"), "error");
         return;
       }
 
@@ -445,16 +474,17 @@ function handleFile(file) {
 
       const recognized = Object.keys(columns);
       const unrecognized = fieldnames.filter(f => !Object.values(columns).includes(f));
-      let html = "<table><tr><th>Recognized field</th><th>CSV column</th></tr>";
-      recognized.forEach(k => { html += `<tr><td>${k}</td><td>${columns[k]}</td></tr>`; });
+      let html = `<table><tr><th>${tr("recognizedField")}</th><th>${tr("csvColumn")}</th></tr>`;
+      const fieldKeys = { code:"code", name:"name", Country:"country", Region:"region", Variety:"variety", Processing:"processing", Producer:"producer", Altitude:"altitude" };
+      recognized.forEach(k => { html += `<tr><td>${tr(fieldKeys[k] || k)}</td><td>${columns[k]}</td></tr>`; });
       html += "</table>";
       if (unrecognized.length) {
-        html += `<p style="font-size:0.85rem;color:#fcd34d;margin-top:0.5rem;">Ignored columns (no match): ${unrecognized.join(", ")}</p>`;
+        html += `<p style="font-size:0.85rem;color:#fcd34d;margin-top:0.5rem;">${tr("ignoredColumns")}${unrecognized.join(", ")}</p>`;
       }
       previewEl.innerHTML = html;
     },
     error: (err) => {
-      setStatus("Failed to read file: " + err.message, "error");
+      setStatus(tr("readError") + err.message, "error");
     },
   });
 }
@@ -490,9 +520,9 @@ previewBtn.addEventListener("click", async () => {
     previewFrame.src = doc.output("bloburl");
     previewContainer.style.display = "block";
     previewContainer.scrollIntoView({ behavior: "smooth", block: "start" });
-    setStatus("Preview generated.", "ok");
+    setStatus(tr("previewGenerated"), "ok");
   } catch (err) {
-    setStatus("Error generating preview: " + err.message, "error");
+    setStatus(tr("previewError") + err.message, "error");
   }
 });
 
@@ -504,11 +534,11 @@ generateBtn.addEventListener("click", async () => {
     await savePdf(doc);
     setStatus(
       overflowReport.length
-        ? `PDF saved — but ${overflowReport.length} lot(s) had text cut off, see warning above.`
-        : "PDF saved.",
+        ? tr("pdfSavedOverflow").replace("{n}", overflowReport.length)
+        : tr("pdfSaved"),
       overflowReport.length ? "error" : "ok"
     );
   } catch (err) {
-    setStatus("Error generating PDF: " + err.message, "error");
+    setStatus(tr("pdfError") + err.message, "error");
   }
 });
