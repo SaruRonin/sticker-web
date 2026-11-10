@@ -116,6 +116,15 @@
     color: var(--text-muted);
     gap: 0.3rem;
   }
+  .settings label.checkbox {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .settings label.checkbox input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--purple);
+  }
   .settings select, .settings input[type="number"], #quantityTable input[type="number"] {
     font-size: 0.9rem;
     padding: 0.3rem 0.4rem;
@@ -225,11 +234,15 @@
       <option value="courier">Courier</option>
     </select>
   </label>
-  <label class="sheet-only">
+  <label class="label-only checkbox" id="manualFontWrap" style="display:none;">
+    <input type="checkbox" id="manualFontSize">
+    Manual font size
+  </label>
+  <label id="titleSizeWrap">
     Title size (pt)
     <input type="number" id="titleSize" value="12" min="4" max="24" step="0.5">
   </label>
-  <label class="sheet-only">
+  <label id="bodySizeWrap">
     Body size (pt)
     <input type="number" id="bodySize" value="9" min="4" max="24" step="0.5">
   </label>
@@ -570,7 +583,7 @@ function drawSticker(doc, x, yTop, placed, fontFamily) {
   }
 }
 
-// Label mode has no manual font-size fields - instead, each lot's text is
+// Label mode's default (when "Manual font size" is off): each lot's text is
 // sized as large as will fit that specific label (binary search on title
 // size, with body size and the title/body gap scaled to match), then
 // centered. Different lots can end up with different sizes; that's the
@@ -610,6 +623,26 @@ function autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily) {
   return best;
 }
 
+// Label mode's layout, honoring the "Manual font size" override: when it's
+// on, use the same Title/Body size fields as sheet mode (still centered,
+// same margins as auto-fit) instead of searching for a best-fit size.
+function labelLayoutFor(doc, stickerW, stickerH, row, columns, fontFamily, options) {
+  if (!options.manualFontSize) {
+    return autoFitLayout(doc, stickerW, stickerH, row, columns, fontFamily);
+  }
+  const { titleSize, bodySize } = options;
+  const lines = buildLines(row, columns, titleSize, bodySize);
+  const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
+    center: true,
+    titleBodyGap: titleSize * 0.3,
+    padLeft: AUTO_FIT_PAD,
+    padTop: AUTO_FIT_PAD,
+    padRight: AUTO_FIT_PAD,
+    padBottom: AUTO_FIT_PAD,
+  });
+  return { ...result, titleSize, bodySize };
+}
+
 // Cheap check (no pages created) of whether every lot's content fits in a
 // single sticker cell at the given font/size settings.
 async function checkFit(rows, columns, options) {
@@ -628,9 +661,11 @@ async function checkFit(rows, columns, options) {
   });
 }
 
-// Label-mode equivalent of checkFit: since font size is auto-fit per lot
-// rather than coming from the title/body size fields, this reports overflow
-// only for lots where even the minimum auto-fit size doesn't fit.
+// Label-mode equivalent of checkFit. With the manual override off, font
+// size is auto-fit per lot rather than coming from the title/body size
+// fields, so this only reports overflow for lots where even the minimum
+// auto-fit size doesn't fit; with it on, it checks the manual size exactly
+// like sheet mode does.
 async function checkFitLabel(rows, columns, options) {
   const { fontFamily, stickerWidthMm, stickerHeightMm } = options;
   const stickerW = stickerWidthMm * PT_PER_MM;
@@ -641,7 +676,7 @@ async function checkFitLabel(rows, columns, options) {
   return rows.map((row) => {
     const code = columns.code ? cleanField(row[columns.code]) : "";
     const name = columns.name ? cleanField(row[columns.name]) : "";
-    const { overflow, cutText } = autoFitLayout(doc, stickerW, stickerH, row, columns, resolvedFamily);
+    const { overflow, cutText } = labelLayoutFor(doc, stickerW, stickerH, row, columns, resolvedFamily, options);
     return { code, name, overflow, cutText };
   });
 }
@@ -712,8 +747,8 @@ async function buildDoc(rows, columns, options) {
 // each row's lot repeated `quantities[i]` times. Reuses the same
 // buildLines/layoutSticker/drawSticker content layer as buildDoc, so the
 // two output modes only differ in how pages/positions are assembled - and
-// in that each lot's text is centered and auto-sized via autoFitLayout
-// instead of using the (sheet-only) manual title/body size fields.
+// in that each lot's text is centered, either auto-sized (labelLayoutFor's
+// default) or using the Title/Body size fields when "Manual font size" is on.
 async function buildLabelDoc(rows, columns, quantities, options) {
   const { fontFamily, stickerWidthMm, stickerHeightMm } = options;
   const stickerW = stickerWidthMm * PT_PER_MM;
@@ -729,7 +764,7 @@ async function buildLabelDoc(rows, columns, quantities, options) {
     if (qty <= 0) return;
     const code = columns.code ? cleanField(row[columns.code]) : "";
     const name = columns.name ? cleanField(row[columns.name]) : "";
-    const { placed, overflow, cutText } = autoFitLayout(doc, stickerW, stickerH, row, columns, resolvedFamily);
+    const { placed, overflow, cutText } = labelLayoutFor(doc, stickerW, stickerH, row, columns, resolvedFamily, options);
     if (overflow) overflowReport.push({ code, name, cutText, overflow: true });
 
     for (let i = 0; i < qty; i++) {
@@ -785,6 +820,7 @@ function getOptions() {
     stickerHeightMm: parseFloat(document.getElementById("stickerHeight").value) || 42.3,
     gapXMm: parseFloat(document.getElementById("gapX").value) || 0,
     gapYMm: parseFloat(document.getElementById("gapY").value) || 0,
+    manualFontSize: document.getElementById("manualFontSize").checked,
   };
 }
 
@@ -912,6 +948,16 @@ function selectDefaultPresetForMode(mode) {
   sel.value = (firstMatch || sel.options[0]).value;
 }
 
+// Title/Body size are always relevant for sheet mode, but for label mode
+// they only apply when "Manual font size" is checked (otherwise autoFitLayout
+// picks the size per lot, so showing fields that don't do anything would be
+// confusing).
+function updateFontFieldsVisibility() {
+  const show = currentMode() === "sheet" || document.getElementById("manualFontSize").checked;
+  document.getElementById("titleSizeWrap").style.display = show ? "" : "none";
+  document.getElementById("bodySizeWrap").style.display = show ? "" : "none";
+}
+
 function setOutputMode(mode) {
   outputModeValue = mode;
   document.querySelectorAll(".modeBtn").forEach((btn) => {
@@ -921,12 +967,20 @@ function setOutputMode(mode) {
   document.querySelectorAll(".sheet-only").forEach((el) => {
     el.style.display = mode === "label" ? "none" : "";
   });
+  document.querySelectorAll(".label-only").forEach((el) => {
+    el.style.display = mode === "label" ? "" : "none";
+  });
+  updateFontFieldsVisibility();
   applyLabelPreset(document.getElementById("labelPreset").value); // also runs the fit check
   renderQuantityTable();
 }
 
 document.querySelectorAll(".modeBtn").forEach((btn) => {
   btn.addEventListener("click", () => setOutputMode(btn.dataset.mode));
+});
+document.getElementById("manualFontSize").addEventListener("change", () => {
+  updateFontFieldsVisibility();
+  runFitCheck();
 });
 setOutputMode(outputModeValue);
 
