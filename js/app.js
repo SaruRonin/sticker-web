@@ -24,9 +24,20 @@ Object.assign(UI_TEXT.en, { warningFit:"{n} lot(s) may not fit at this font size
 Object.assign(UI_TEXT.ja, { warningFit:"{n}件のロットが設定したフォントサイズに収まらず、一部の文字が切れる可能性があります。", warningFitHelp:"フォントサイズを小さくするか、作成前にプレビューをご確認ください。" });
 Object.assign(UI_TEXT.ko, { editLotsTitle:"로트 편집", warningFit:"{n}개 로트의 텍스트가 현재 글꼴 크기에 맞지 않아 일부가 잘릴 수 있습니다.", warningFitHelp:"글꼴 크기를 줄이거나 만들기 전에 미리보기를 확인하세요." });
 Object.assign(UI_TEXT.es, { editLotsTitle:"Editar lotes", warningFit:"El texto de {n} lote(s) no cabe con este tamaño de fuente y puede quedar cortado.", warningFitHelp:"Prueba con una fuente más pequeña o revisa la vista previa antes de generar el PDF." });
+Object.assign(UI_TEXT.en, { emptyLotMessage:"Complete or remove every empty lot before generating a PDF.", csvEmptyLots:"The CSV contains one or more lots with no properties. Fill them in or remove those rows, then try again." });
+Object.assign(UI_TEXT.ja, { emptyLotMessage:"空のロットをすべて入力するか削除してからPDFを作成してください。", csvEmptyLots:"CSVに項目が空のロットがあります。入力するか該当行を削除して、もう一度お試しください。" });
+Object.assign(UI_TEXT.ko, { emptyLotMessage:"PDF를 만들기 전에 속성이 비어 있는 로트를 모두 입력하거나 삭제하세요.", csvEmptyLots:"CSV에 속성이 비어 있는 로트가 있습니다. 내용을 입력하거나 해당 행을 삭제한 뒤 다시 시도하세요." });
+Object.assign(UI_TEXT.es, { emptyLotMessage:"Completa o elimina todos los lotes vacíos antes de generar el PDF.", csvEmptyLots:"El CSV contiene uno o más lotes sin propiedades. Complétalos o elimina esas filas e inténtalo de nuevo." });
+Object.assign(UI_TEXT.pt, { emptyLotMessage:"Preencha ou remova todos os lotes vazios antes de gerar o PDF.", csvEmptyLots:"O CSV contém um ou mais lotes sem propriedades. Preencha-os ou remova essas linhas e tente novamente." });
 const savedUiLanguage = localStorage.getItem("stickerUiLanguage");
 let uiLanguage = UI_TEXT[savedUiLanguage] ? savedUiLanguage : "en";
 function tr(key) { return (UI_TEXT[uiLanguage] && UI_TEXT[uiLanguage][key]) || UI_TEXT.en[key] || key; }
+function setLotModalValidation(visible) {
+  const el = document.getElementById("lotModalValidation");
+  if (!el) return;
+  el.textContent = visible ? tr("emptyLotMessage") : "";
+  el.style.display = visible ? "block" : "none";
+}
 function applyLanguage() {
   document.documentElement.lang = uiLanguage;
   document.title = tr("appTitle");
@@ -34,6 +45,8 @@ function applyLanguage() {
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = tr(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = tr(el.dataset.i18nTitle); });
   document.getElementById("languageSelect").value = uiLanguage;
+  const lotValidation = document.getElementById("lotModalValidation");
+  if (lotValidation && lotValidation.style.display !== "none") setLotModalValidation(true);
   renderQuantityTable();
   if (parsedRows) renderLotModalTable();
   if (parsedRows) runFitCheck();
@@ -56,6 +69,7 @@ const previewFrame = document.getElementById("previewFrame");
 
 let parsedRows = null; // array of canonical lot objects (see emptyLot/toCanonicalRow), from CSV or the Edit Lots modal
 let quantities = []; // copies to print for each row, parallel to parsedRows (both output modes)
+let pendingLotDraft = null; // not committed as a lot until at least one property has content
 let outputModeValue = "sheet"; // set by the Output toggle buttons, see setOutputMode
 
 // Sheet mode only: lets a partially-used physical sheet be reused by
@@ -74,6 +88,29 @@ function currentMode() {
 function setStatus(msg, kind) {
   statusEl.textContent = msg;
   statusEl.className = kind || "";
+}
+
+function lotHasProperties(lot) {
+  return ALL_FIELDS.some((field) => cleanField(lot[field]));
+}
+
+function emptyLotIndexes() {
+  return (parsedRows || []).reduce((indexes, lot, idx) => {
+    if (!lotHasProperties(lot)) indexes.push(idx);
+    return indexes;
+  }, []);
+}
+
+function hasIncompleteLots() {
+  return !!pendingLotDraft || emptyLotIndexes().length > 0;
+}
+
+function focusFirstEmptyLot() {
+  const idx = emptyLotIndexes()[0];
+  const input = pendingLotDraft
+    ? lotModalTable.querySelector('.lotField[data-draft="true"]')
+    : idx === undefined ? null : lotModalTable.querySelector(`.lotField[data-idx="${idx}"]`);
+  if (input) input.focus();
 }
 
 function escapeHtml(str) {
@@ -124,6 +161,15 @@ function renderFitWarnings(report) {
 async function runFitCheck() {
   if (!parsedRows) return;
   const options = getOptions();
+
+  if (hasIncompleteLots()) {
+    generateBtn.disabled = true;
+    previewBtn.disabled = true;
+    setStatus(tr("emptyLotMessage"), "error");
+    warningsEl.innerHTML = "";
+    warningsEl.className = "";
+    return;
+  }
 
   if (parsedRows.length === 0) {
     generateBtn.disabled = true;
@@ -349,6 +395,12 @@ function renderLotModalTable() {
     ).join("");
     html += `<td><button type="button" class="removeLotBtn" data-idx="${idx}">${tr("remove")}</button></td></tr>`;
   });
+  if (pendingLotDraft) {
+    html += "<tr>" + LOT_FIELD_LABELS.map(([field]) =>
+      `<td><input type="text" class="lotField" data-draft="true" data-field="${field}" value="${escapeAttr(pendingLotDraft[field] || "")}"></td>`
+    ).join("");
+    html += `<td><button type="button" class="removeLotBtn" data-idx="draft">${tr("remove")}</button></td></tr>`;
+  }
   lotModalTable.innerHTML = html;
 }
 
@@ -358,10 +410,18 @@ function openLotModal() {
     quantities = [];
   }
   renderLotModalTable();
+  setLotModalValidation(hasIncompleteLots());
   lotModalOverlay.style.display = "flex";
 }
 
 function closeLotModal() {
+  if (hasIncompleteLots()) {
+    setLotModalValidation(true);
+    setStatus(tr("emptyLotMessage"), "error");
+    focusFirstEmptyLot();
+    return;
+  }
+  setLotModalValidation(false);
   lotModalOverlay.style.display = "none";
 }
 
@@ -372,29 +432,63 @@ lotModalOverlay.addEventListener("click", (e) => {
 });
 
 document.getElementById("addLotBtn").addEventListener("click", () => {
-  parsedRows.push(emptyLot());
-  quantities.push(1);
+  if (hasIncompleteLots()) {
+    setLotModalValidation(true);
+    setStatus(tr("emptyLotMessage"), "error");
+    focusFirstEmptyLot();
+    return;
+  }
+  pendingLotDraft = emptyLot();
   renderLotModalTable();
-  renderQuantityTable();
+  setLotModalValidation(true);
+  const draftInput = lotModalTable.querySelector('.lotField[data-draft="true"]');
+  if (draftInput) draftInput.focus();
   runFitCheck();
 });
 
 lotModalTable.addEventListener("input", (e) => {
   if (!e.target.classList.contains("lotField")) return;
+  if (e.target.dataset.draft === "true") {
+    const field = e.target.dataset.field;
+    pendingLotDraft[field] = e.target.value;
+    if (lotHasProperties(pendingLotDraft)) {
+      const committedIndex = parsedRows.length;
+      parsedRows.push(pendingLotDraft);
+      quantities.push(1);
+      pendingLotDraft = null;
+      renderLotModalTable();
+      renderQuantityTable();
+      setLotModalValidation(hasIncompleteLots());
+      const committedInput = lotModalTable.querySelector(`.lotField[data-idx="${committedIndex}"][data-field="${field}"]`);
+      if (committedInput) committedInput.focus();
+    }
+    else setLotModalValidation(true);
+    runFitCheck();
+    return;
+  }
   const idx = parseInt(e.target.dataset.idx, 10);
   parsedRows[idx][e.target.dataset.field] = e.target.value;
   renderQuantityTable(); // code/name changes affect the quantity table's row labels
+  setLotModalValidation(hasIncompleteLots());
   runFitCheck();
 });
 
 lotModalTable.addEventListener("click", (e) => {
   const btn = e.target.closest(".removeLotBtn");
   if (!btn) return;
+  if (btn.dataset.idx === "draft") {
+    pendingLotDraft = null;
+    renderLotModalTable();
+    setLotModalValidation(hasIncompleteLots());
+    runFitCheck();
+    return;
+  }
   const idx = parseInt(btn.dataset.idx, 10);
   parsedRows.splice(idx, 1);
   quantities.splice(idx, 1);
   renderLotModalTable();
   renderQuantityTable();
+  setLotModalValidation(hasIncompleteLots());
   runFitCheck();
 });
 
@@ -480,7 +574,15 @@ function handleFile(file) {
         return;
       }
 
-      parsedRows = rows.map((row) => toCanonicalRow(row, columns));
+      const canonicalRows = rows.map((row) => toCanonicalRow(row, columns));
+      if (canonicalRows.some((row) => !lotHasProperties(row))) {
+        setStatus(tr("csvEmptyLots"), "error");
+        generateBtn.disabled = true;
+        previewBtn.disabled = true;
+        return;
+      }
+      parsedRows = canonicalRows;
+      pendingLotDraft = null;
       quantities = rows.map(() => 1);
       renderQuantityTable();
       runFitCheck();
@@ -517,6 +619,7 @@ dropEl.addEventListener("drop", (e) => {
 });
 
 async function buildCurrentDoc() {
+  if (hasIncompleteLots()) throw new Error(tr("emptyLotMessage"));
   const options = getOptions();
   if (currentMode() === "label") {
     return buildLabelDoc(parsedRows, quantities, options);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Saru's Sticker Generator</title>
-<link rel="stylesheet" href="css/styles.css?v=4">
+<link rel="stylesheet" href="css/styles.css?v=5">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
@@ -135,6 +135,7 @@
   <div class="modal-box">
     <h2 data-i18n="editLotsTitle">Edit Lots</h2>
     <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0;" data-i18n="editLotsHelp">Add, edit, or remove lots by hand - changes apply immediately.</p>
+    <p id="lotModalValidation" class="modal-validation" role="alert" style="display:none;"></p>
     <div class="modal-table-wrap">
       <table id="lotModalTable"></table>
     </div>
@@ -165,7 +166,7 @@
 <script src="js/layout.js"></script>
 <script src="js/fonts.js"></script>
 <script src="js/pdf.js"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=5"></script>
 
 </body>
 </html>

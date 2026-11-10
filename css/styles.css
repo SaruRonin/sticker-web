@@ -238,6 +238,7 @@ button.secondary:hover:not(:disabled) { background: rgba(109, 40, 217, 0.2); }
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 .modal-box h2 { margin: 0 0 0.25rem; color: var(--gold-bright); font-size: 1.15rem; }
+.modal-validation { color: #fca5a5; font-size: 0.85rem; margin: 0.5rem 0; }
 .modal-table-wrap { overflow-x: auto; margin-top: 0.5rem; }
 .modal-table-wrap table { white-space: nowrap; }
 .modal-table-wrap input[type="text"] {
