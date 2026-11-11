@@ -2,7 +2,7 @@
 // (js/country-codes.js), loaded before this file.
 
 const FIELD_ALIASES = {
-  code: ["code", "id", "lot", "lot code", "lot id", "sku"],
+  code: ["code", "id", "lot", "lot code", "lot id", "lot number", "sku"],
   name: ["name", "lot name", "title"],
   Country: ["country", "origin"],
   Region: ["region"],

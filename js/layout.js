@@ -59,9 +59,8 @@ const DESCENDER_RATIO = 0.25;
 // opts: { centerX, centerY, titleBodyGap, padLeft, padTop, padRight,
 // padBottom, noWrap } all optional - omitted ones default to the sheet-mode
 // look (left/top anchored, fixed padding, wrapping allowed) so existing
-// callers are unaffected. Label mode leaves centerX/centerY at their false
-// defaults too (top-left anchored, same as sheet mode), just with its own
-// padding/gap instead of the sheet preset's calibrated PAD_LEFT/PAD_TOP.
+// callers are unaffected. Thermal labels center their content within the
+// label while sheet stickers retain their calibrated left/top placement.
 // Auto-fit also passes noWrap:true, so a line that would need to wrap
 // counts as overflow and the binary search picks a smaller size instead -
 // otherwise the "best fit" size could still wrap a line. Manual font size
@@ -151,6 +150,8 @@ function autoFitLayout(doc, stickerW, stickerH, row, fontFamily) {
     const lines = buildLines(row, titleSize, bodySize);
     const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
       ...padOpts,
+      centerX: true,
+      centerY: true,
       titleBodyGap: titleSize * 0.3,
     });
     return { ...result, titleSize, bodySize };
@@ -181,6 +182,8 @@ function labelLayoutFor(doc, stickerW, stickerH, row, fontFamily, options) {
   const { titleSize, bodySize } = options;
   const lines = buildLines(row, titleSize, bodySize);
   const result = layoutSticker(doc, stickerW, stickerH, lines, fontFamily, titleSize, {
+    centerX: true,
+    centerY: true,
     titleBodyGap: titleSize * 0.3,
     padLeft: AUTO_FIT_PAD,
     padTop: AUTO_FIT_PAD,
