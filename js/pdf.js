@@ -108,6 +108,30 @@ async function buildDoc(rows, quantities, options, skipCells) {
   const skip = skipCells && skipCells.length === perPage ? skipCells : new Array(perPage).fill(false);
   const overflowReport = [];
 
+  if (options.fullSheetPerLot) {
+    let totalStickers = 0;
+    rows.forEach((row, idx) => {
+      const code = cleanField(row.code);
+      const name = cleanField(row.name);
+      const lines = buildLines(row, titleSize, bodySize);
+      const { placed, overflow, cutText } = layoutSticker(doc, stickerW, stickerH, lines, resolvedFamily, titleSize);
+      if (overflow) overflowReport.push({ code, name, cutText, overflow: true });
+
+      if (idx > 0) doc.addPage();
+      for (let cell = 0; cell < perPage; cell++) {
+        if (idx === 0 && skip[cell]) continue;
+        const col = cell % cols;
+        const r = Math.floor(cell / cols);
+        const x = marginX + col * (stickerW + gapX);
+        const yTop = marginY + r * (stickerH + gapY);
+        drawSticker(doc, x, yTop, placed, resolvedFamily);
+        totalStickers++;
+      }
+    });
+
+    return { doc, overflowReport, cols, rows: gridRows, perPage, totalStickers, totalPages: doc.internal.getNumberOfPages() };
+  }
+
   // Lay out each lot's content once, then repeat the result `quantities[i]`
   // times in the sequence below - laying out the same text twice would be
   // wasted work and (for autoFitLayout-style callers) could in principle

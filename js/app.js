@@ -3,7 +3,7 @@
 // csv.js, layout.js, fonts.js, pdf.js), all loaded before this file.
 
 const UI_TEXT = {
-  en: { language:"Language", appTitle:"Saru's Sticker Generator", subtitle:"Upload a CSV of Coffee Lots. Choose your Sticker type and sticker away!", chooseCsv:"Click to choose a CSV file", orDrag:"or drag it here", csvOnly:".csv only", editLots:"Edit / Add Lots Manually", output:"Output", a4Sheet:"A4 Sheet", thermalLabel:"Thermal Label", font:"Font", manualFontSize:"Manual font size", titleSize:"Title size (pt)", bodySize:"Body size (pt)", labelSize:"Label size", customSize:"Custom size", stickerWidth:"Sticker width (mm)", stickerHeight:"Sticker height (mm)", gapX:"Gap X (mm)", gapY:"Gap Y (mm)", copiesPerLot:"Copies per lot", reuseSheet:"Reuse a partially-used sheet (mark which stickers are already gone)", chooseStickers:"Choose Available Stickers", generatePdf:"Generate PDF", previewPdf:"Preview PDF", editLotsHelp:"Add, edit, or remove lots by hand - changes apply immediately.", addLot:"+ Add lot", done:"Done", pickerHelp:"Click a sticker to mark it already used (skipped) or still available.", markAllUsed:"Mark all used", markAllAvailable:"Mark all available", recognizedColumns:"Recognized columns", columnHelp:"Case-insensitive, any order; missing/blank fields are skipped per sticker.",
+  en: { language:"Language", appTitle:"Saru's Sticker Generator", subtitle:"Upload a CSV of Coffee Lots. Choose your Sticker type and sticker away!", chooseCsv:"Click to choose a CSV file", orDrag:"or drag it here", csvOnly:".csv only", editLots:"Edit / Add Lots Manually", output:"Output", a4Sheet:"A4 Sheet", thermalLabel:"Thermal Label", font:"Font", manualFontSize:"Manual font size", titleSize:"Title size (pt)", bodySize:"Body size (pt)", labelSize:"Label size", customSize:"Custom size", stickerWidth:"Sticker width (mm)", stickerHeight:"Sticker height (mm)", gapX:"Gap X (mm)", gapY:"Gap Y (mm)", copiesPerLot:"Copies per lot", manualSheetQuantities:"Choose sticker amounts manually", reuseSheet:"Reuse a partially-used sheet (mark which stickers are already gone)", chooseStickers:"Choose Available Stickers", generatePdf:"Generate PDF", previewPdf:"Preview PDF", editLotsHelp:"Add, edit, or remove lots by hand - changes apply immediately.", addLot:"+ Add lot", addProperty:"+ Add property", removeProperty:"Remove property", propertyName:"Property name", propertyFallback:"New property", done:"Done", pickerHelp:"Click a sticker to mark it already used (skipped) or still available.", markAllUsed:"Mark all used", markAllAvailable:"Mark all available", recognizedColumns:"Recognized columns", columnHelp:"Case-insensitive, any order; missing/blank fields are skipped per sticker.",
     code:"Code", name:"Name", country:"Country", region:"Region", variety:"Variety", processing:"Processing", producer:"Producer", altitude:"Altitude", lot:"Lot", quantity:"Quantity", remove:"Remove", decrease:"Decrease quantity", increase:"Increase quantity", recognizedField:"Recognized field", csvColumn:"CSV column", ignoredColumns:"Ignored columns (no match): ", parsing:"Parsing", csvParseError:"CSV parse error: ", csvNoHeader:"CSV has no header row.", csvNoRows:"CSV has no data rows.", readError:"Failed to read file: ", addLotToGenerate:"Add at least one lot (via CSV or Edit Lots) to generate stickers.", setQuantity:"Set a quantity greater than 0 for at least one lot.", sizeTooLarge:"Sticker size (with gaps) is too large to fit on an A4 page — reduce the width/height or gaps.", previewGenerated:"Preview generated.", previewError:"Error generating preview: ", pdfSaved:"PDF saved.", pdfSavedOverflow:"PDF saved — but {n} lot(s) had text cut off, see warning above.", pdfError:"Error generating PDF: ",
   },
   ja: { language:"言語", appTitle:"Saru's Sticker Generator", subtitle:"コーヒーロットのCSVをアップロードし、ステッカーの種類を選んで作成しましょう。", chooseCsv:"クリックしてCSVファイルを選択", orDrag:"またはここにドラッグ", csvOnly:"CSVファイルのみ", editLots:"ロットを手動で編集・追加", output:"出力形式", a4Sheet:"A4シート", thermalLabel:"感熱ラベル", font:"フォント", manualFontSize:"フォントサイズを手動で指定", titleSize:"タイトルサイズ (pt)", bodySize:"本文サイズ (pt)", labelSize:"ラベルサイズ", customSize:"カスタムサイズ", stickerWidth:"ステッカー幅 (mm)", stickerHeight:"ステッカー高さ (mm)", gapX:"横の間隔 (mm)", gapY:"縦の間隔 (mm)", copiesPerLot:"ロットごとの印刷枚数", reuseSheet:"使用済みの位置を指定して、使いかけのシートを再利用", chooseStickers:"使用可能なステッカーを選択", generatePdf:"PDFを作成", previewPdf:"PDFをプレビュー", editLotsHelp:"ロットを手動で追加・編集・削除できます。変更はすぐに反映されます。", addLot:"+ ロットを追加", done:"完了", pickerHelp:"ステッカーをクリックして、使用済み（スキップ）または使用可能に切り替えます。", markAllUsed:"すべて使用済みにする", markAllAvailable:"すべて使用可能にする", recognizedColumns:"認識された列", columnHelp:"大文字・小文字や列の順番は問いません。空欄の項目はステッカーごとに省略されます。", code:"コード", name:"名前", country:"国", region:"地域", variety:"品種", processing:"精製方法", producer:"生産者", altitude:"標高", lot:"ロット", quantity:"枚数", remove:"削除", decrease:"枚数を減らす", increase:"枚数を増やす", recognizedField:"認識した項目", csvColumn:"CSV列", ignoredColumns:"一致しないため無視した列：", parsing:"読み込み中：", csvParseError:"CSV解析エラー：", csvNoHeader:"CSVにヘッダー行がありません。", csvNoRows:"CSVにデータ行がありません。", readError:"ファイルを読み込めませんでした：", addLotToGenerate:"ステッカーを作成するには、CSVを読み込むかロットを追加してください。", setQuantity:"いずれかのロットの枚数を1以上にしてください。", sizeTooLarge:"ステッカーが大きすぎてA4に収まりません。幅・高さまたは間隔を小さくしてください。", previewGenerated:"プレビューを作成しました。", previewError:"プレビュー作成エラー：", pdfSaved:"PDFを保存しました。", pdfSavedOverflow:"PDFを保存しました。ただし{n}件のロットで文字が切れています。上の警告をご確認ください。", pdfError:"PDF作成エラー："
@@ -19,6 +19,14 @@ UI_TEXT.pt = { ...UI_TEXT.en,
   language:"Idioma", subtitle:"Carregue um CSV de lotes de café, escolha o tipo de etiqueta e crie suas etiquetas.", chooseCsv:"Clique para escolher um arquivo CSV", orDrag:"ou arraste-o até aqui", csvOnly:"Somente arquivos CSV", editLots:"Editar / adicionar lotes manualmente", output:"Formato de saída", a4Sheet:"Folha A4", thermalLabel:"Etiqueta térmica", font:"Fonte", manualFontSize:"Tamanho da fonte manual", titleSize:"Tamanho do título (pt)", bodySize:"Tamanho do texto (pt)", labelSize:"Tamanho da etiqueta", customSize:"Tamanho personalizado", stickerWidth:"Largura da etiqueta (mm)", stickerHeight:"Altura da etiqueta (mm)", gapX:"Espaçamento horizontal (mm)", gapY:"Espaçamento vertical (mm)", copiesPerLot:"Cópias por lote", reuseSheet:"Reutilizar uma folha iniciada (marque as etiquetas já usadas)", chooseStickers:"Escolher etiquetas disponíveis", generatePdf:"Gerar PDF", previewPdf:"Visualizar PDF", editLotsTitle:"Editar lotes", editLotsHelp:"Adicione, edite ou remova lotes manualmente. As alterações são aplicadas imediatamente.", addLot:"+ Adicionar lote", done:"Concluído", pickerHelp:"Clique em uma etiqueta para marcá-la como usada (será ignorada) ou disponível.", markAllUsed:"Marcar todas como usadas", markAllAvailable:"Marcar todas como disponíveis", recognizedColumns:"Colunas reconhecidas", columnHelp:"Não diferencia maiúsculas de minúsculas e aceita qualquer ordem. Campos vazios são omitidos em cada etiqueta.", code:"Código", name:"Nome", country:"País", region:"Região", variety:"Variedade", processing:"Processamento", producer:"Produtor", altitude:"Altitude", lot:"Lote", quantity:"Quantidade", remove:"Remover", decrease:"Diminuir quantidade", increase:"Aumentar quantidade", recognizedField:"Campo reconhecido", csvColumn:"Coluna CSV", ignoredColumns:"Colunas ignoradas (sem correspondência): ", parsing:"Lendo ", csvParseError:"Erro ao analisar CSV: ", csvNoHeader:"O CSV não tem uma linha de cabeçalho.", csvNoRows:"O CSV não tem linhas de dados.", readError:"Falha ao ler o arquivo: ", addLotToGenerate:"Adicione pelo menos um lote por CSV ou pela edição manual para gerar etiquetas.", setQuantity:"Defina uma quantidade maior que 0 para pelo menos um lote.", sizeTooLarge:"A etiqueta é grande demais para caber em uma folha A4. Reduza a largura, a altura ou o espaçamento.", previewGenerated:"Pré-visualização gerada.", previewError:"Erro ao gerar pré-visualização: ", pdfSaved:"PDF salvo.", pdfSavedOverflow:"PDF salvo, mas o texto de {n} lote(s) foi cortado. Consulte o aviso acima.", pdfError:"Erro ao gerar PDF: ", loaded:"Carregados ", lotsSuffix:" lote(s) → ", labelsTotal:" etiqueta(s) no total.", stickersSuffix:" etiqueta(s) em ", pagesSuffix:" página(s)", gridSuffix:" grade, ", perPageSuffix:" por página", usedOnSheetSuffix:" já usadas na primeira folha", lotFallback:"(linha sem nome)", warningFit:"O texto de {n} lote(s) pode não caber neste tamanho de fonte e ser cortado.", warningFitHelp:"Tente reduzir o tamanho da fonte ou confira a pré-visualização antes de gerar."
 };
 Object.assign(UI_TEXT.en, { editLotsTitle:"Edit Lots", loaded:"Loaded", lotsSuffix:" lot(s) → ", labelsTotal:" label(s) total.", stickersSuffix:" sticker(s) across ", pagesSuffix:" page(s)", gridSuffix:" grid, ", perPageSuffix:" per page", usedOnSheetSuffix:" already used on sheet 1", lotFallback:"(unlabeled row)" });
+Object.assign(UI_TEXT.ja, { addProperty:"+ 項目を追加", removeProperty:"項目を削除", propertyName:"項目名", propertyFallback:"新しい項目" });
+Object.assign(UI_TEXT.ja, { manualSheetQuantities:"ステッカー枚数を手動で指定" });
+Object.assign(UI_TEXT.ko, { addProperty:"+ 속성 추가", removeProperty:"속성 삭제", propertyName:"속성 이름", propertyFallback:"새 속성" });
+Object.assign(UI_TEXT.ko, { manualSheetQuantities:"스티커 수량 직접 선택" });
+Object.assign(UI_TEXT.es, { addProperty:"+ Añadir propiedad", removeProperty:"Eliminar propiedad", propertyName:"Nombre de la propiedad", propertyFallback:"Nueva propiedad" });
+Object.assign(UI_TEXT.es, { manualSheetQuantities:"Elegir cantidades de pegatinas" });
+Object.assign(UI_TEXT.pt, { addProperty:"+ Adicionar propriedade", removeProperty:"Remover propriedade", propertyName:"Nome da propriedade", propertyFallback:"Nova propriedade" });
+Object.assign(UI_TEXT.pt, { manualSheetQuantities:"Escolher quantidades de etiquetas" });
 Object.assign(UI_TEXT.ja, { editLotsTitle:"ロットを編集", loaded:"読み込み完了：", lotsSuffix:"件のロット → ", labelsTotal:"枚のラベル", stickersSuffix:"枚のステッカー、全", pagesSuffix:"ページ", gridSuffix:"グリッド、", perPageSuffix:"枚/ページ", usedOnSheetSuffix:"枚使用済み（1枚目）", lotFallback:"（名前なし）" });
 Object.assign(UI_TEXT.en, { warningFit:"{n} lot(s) may not fit at this font size, so some text could be cut off.", warningFitHelp:"Try a smaller font size, or check the preview before generating." });
 Object.assign(UI_TEXT.ja, { warningFit:"{n}件のロットが設定したフォントサイズに収まらず、一部の文字が切れる可能性があります。", warningFitHelp:"フォントサイズを小さくするか、作成前にプレビューをご確認ください。" });
@@ -167,7 +175,8 @@ function setStatus(msg, kind) {
 }
 
 function lotHasProperties(lot) {
-  return ALL_FIELDS.some((field) => cleanField(lot[field]));
+  return ALL_FIELDS.some((field) => cleanField(lot[field])) ||
+    Object.values(lot.customProperties || {}).some((value) => cleanField(value));
 }
 
 function emptyLotIndexes() {
@@ -212,6 +221,7 @@ function getOptions() {
     gapXMm: parseFloat(document.getElementById("gapX").value) || 0,
     gapYMm: parseFloat(document.getElementById("gapY").value) || 0,
     manualFontSize: document.getElementById("manualFontSize").checked,
+    fullSheetPerLot: currentMode() === "sheet" && !document.getElementById("manualSheetQuantities").checked,
   };
 }
 
@@ -285,9 +295,14 @@ async function runFitCheck() {
   }
   syncCellPicker();
   const perPage = grid.cols * grid.rows;
-  const totalStickers = quantities.reduce((sum, q) => sum + (q || 0), 0);
   const usedOnFirstPage = reuseEnabled() ? usedCells.filter(Boolean).length : 0;
-  const totalPages = computeSheetPages(totalStickers, perPage, usedOnFirstPage);
+  const fullSheetPerLot = !document.getElementById("manualSheetQuantities").checked;
+  const totalStickers = fullSheetPerLot
+    ? parsedRows.length * perPage - usedOnFirstPage
+    : quantities.reduce((sum, q) => sum + (q || 0), 0);
+  const totalPages = fullSheetPerLot
+    ? parsedRows.length
+    : computeSheetPages(totalStickers, perPage, usedOnFirstPage);
   generateBtn.disabled = totalStickers <= 0;
   previewBtn.disabled = totalStickers <= 0;
   setStatus(
@@ -327,16 +342,16 @@ function applyLabelPreset(presetId) {
 
 document.getElementById("labelPreset").addEventListener("change", (e) => applyLabelPreset(e.target.value));
 
-// Renders the per-lot quantity inputs - used by both output modes now:
-// label mode prints exactly that many labels per lot, and sheet mode packs
-// that many copies of each lot into the shared grid instead of always
-// giving every lot a full page. The container div itself is never
+// Renders the per-lot quantity inputs for thermal labels and for A4 sheets
+// when manual quantities are selected. By default A4 mode gives each lot
+// its own full sheet. The container div itself is never
 // replaced, just its contents, so the single delegated "input" listener
 // registered below keeps working across re-renders.
 function renderQuantityTable() {
   const section = document.getElementById("quantitySection");
   const container = document.getElementById("quantityTable");
-  if (!parsedRows || parsedRows.length === 0) {
+  const showQuantities = currentMode() === "label" || document.getElementById("manualSheetQuantities").checked;
+  if (!parsedRows || parsedRows.length === 0 || !showQuantities) {
     section.style.display = "none";
     container.innerHTML = "";
     return;
@@ -375,6 +390,11 @@ document.getElementById("quantityTable").addEventListener("input", (e) => {
   const idx = parseInt(e.target.dataset.idx, 10);
   quantities[idx] = Math.max(0, parseInt(e.target.value, 10) || 0);
   scheduleFitCheck();
+});
+
+document.getElementById("manualSheetQuantities").addEventListener("change", () => {
+  renderQuantityTable();
+  runFitCheck();
 });
 
 // Sticker Saver: the "reuse a partially-used sheet" cell picker (sheet
@@ -482,18 +502,32 @@ const LOT_FIELD_LABELS = [
 ];
 const lotModalOverlay = document.getElementById("lotModalOverlay");
 const lotModalTable = document.getElementById("lotModalTable");
+const customPropertyEditor = document.getElementById("customPropertyEditor");
 
 function renderLotModalTable() {
-  let html = `<tr class="lot-editor-header">${LOT_FIELD_LABELS.map(([, label]) => `<th>${tr(label)}</th>`).join("") + `<th>${tr("remove")}</th>`}</tr>`;
+  const fixedHeaders = LOT_FIELD_LABELS.map(([, label]) => `<th>${tr(label)}</th>`).join("");
+  const customHeaders = customPropertyFields.map((field) =>
+    `<th data-property-header="${field.id}">${escapeHtml(field.name || tr("propertyFallback"))}</th>`
+  ).join("");
+  customPropertyEditor.innerHTML = customPropertyFields.map((field) =>
+    `<label class="custom-property-control"><span>${tr("propertyName")}</span><input type="text" class="propertyNameField" data-property-name-id="${field.id}" value="${escapeAttr(field.name)}" aria-label="${tr("propertyName")}"><button type="button" class="removePropertyBtn secondary" data-property-id="${field.id}" aria-label="${tr("removeProperty")}" title="${tr("removeProperty")}">×</button></label>`
+  ).join("");
+  let html = `<tr class="lot-editor-header">${fixedHeaders}${customHeaders}<th>${tr("remove")}</th></tr>`;
   parsedRows.forEach((row, idx) => {
     html += `<tr class="lot-editor-row">` + LOT_FIELD_LABELS.map(([field, label]) =>
       `<td><label class="lot-field-editor"><span class="lot-field-name">${tr(label)}</span><input type="text" class="lotField" data-idx="${idx}" data-field="${field}" value="${escapeAttr(row[field] || "")}"></label></td>`
+    ).join("");
+    html += customPropertyFields.map((field) =>
+      `<td><label class="lot-field-editor"><span class="lot-field-name" data-property-label="${field.id}">${escapeHtml(field.name || tr("propertyFallback"))}</span><input type="text" class="lotField" data-idx="${idx}" data-property-id="${field.id}" value="${escapeAttr(row.customProperties && row.customProperties[field.id] || "")}"></label></td>`
     ).join("");
     html += `<td><button type="button" class="removeLotBtn" data-idx="${idx}">${tr("remove")}</button></td></tr>`;
   });
   if (pendingLotDraft) {
     html += `<tr class="lot-editor-row draft">` + LOT_FIELD_LABELS.map(([field, label]) =>
       `<td><label class="lot-field-editor"><span class="lot-field-name">${tr(label)}</span><input type="text" class="lotField" data-draft="true" data-field="${field}" value="${escapeAttr(pendingLotDraft[field] || "")}"></label></td>`
+    ).join("");
+    html += customPropertyFields.map((field) =>
+      `<td><label class="lot-field-editor"><span class="lot-field-name" data-property-label="${field.id}">${escapeHtml(field.name || tr("propertyFallback"))}</span><input type="text" class="lotField" data-draft="true" data-property-id="${field.id}" value="${escapeAttr(pendingLotDraft.customProperties && pendingLotDraft.customProperties[field.id] || "")}"></label></td>`
     ).join("");
     html += `<td><button type="button" class="removeLotBtn" data-idx="draft">${tr("remove")}</button></td></tr>`;
   }
@@ -544,11 +578,56 @@ document.getElementById("addLotBtn").addEventListener("click", () => {
   runFitCheck();
 });
 
+document.getElementById("addPropertyBtn").addEventListener("click", () => {
+  const number = nextCustomPropertyNumber++;
+  const id = `custom-property-${number}`;
+  const field = { id, name: tr("propertyFallback") };
+  customPropertyFields.push(field);
+  (parsedRows || []).forEach((row) => { row.customProperties ||= {}; row.customProperties[id] = ""; });
+  if (pendingLotDraft) pendingLotDraft.customProperties[id] = "";
+  renderLotModalTable();
+  const propertyNameInput = customPropertyEditor.querySelector(`[data-property-name-id="${id}"]`);
+  if (propertyNameInput) { propertyNameInput.focus(); propertyNameInput.select(); }
+  runFitCheck();
+});
+
+customPropertyEditor.addEventListener("input", (e) => {
+  if (e.target.classList.contains("propertyNameField")) {
+    const field = customPropertyFields.find((candidate) => candidate.id === e.target.dataset.propertyNameId);
+    if (!field) return;
+    field.name = e.target.value;
+    const header = lotModalTable.querySelector(`[data-property-header="${field.id}"]`);
+    if (header) header.textContent = field.name || tr("propertyFallback");
+    lotModalTable.querySelectorAll(`[data-property-label="${field.id}"]`).forEach((label) => {
+      label.textContent = field.name || tr("propertyFallback");
+    });
+    runFitCheck();
+    return;
+  }
+});
+
+function removeCustomProperty(propertyId) {
+  const propertyIndex = customPropertyFields.findIndex((field) => field.id === propertyId);
+  if (propertyIndex !== -1) customPropertyFields.splice(propertyIndex, 1);
+  (parsedRows || []).forEach((row) => { if (row.customProperties) delete row.customProperties[propertyId]; });
+  if (pendingLotDraft && pendingLotDraft.customProperties) delete pendingLotDraft.customProperties[propertyId];
+  renderLotModalTable();
+  setLotModalValidation(hasIncompleteLots());
+  runFitCheck();
+}
+
+customPropertyEditor.addEventListener("click", (e) => {
+  const propertyBtn = e.target.closest(".removePropertyBtn");
+  if (propertyBtn) removeCustomProperty(propertyBtn.dataset.propertyId);
+});
+
 lotModalTable.addEventListener("input", (e) => {
   if (!e.target.classList.contains("lotField")) return;
   if (e.target.dataset.draft === "true") {
+    const propertyId = e.target.dataset.propertyId;
     const field = e.target.dataset.field;
-    pendingLotDraft[field] = e.target.value;
+    if (propertyId) pendingLotDraft.customProperties[propertyId] = e.target.value;
+    else pendingLotDraft[field] = e.target.value;
     if (lotHasProperties(pendingLotDraft)) {
       const committedIndex = parsedRows.length;
       parsedRows.push(pendingLotDraft);
@@ -557,7 +636,9 @@ lotModalTable.addEventListener("input", (e) => {
       renderLotModalTable();
       renderQuantityTable();
       setLotModalValidation(hasIncompleteLots());
-      const committedInput = lotModalTable.querySelector(`.lotField[data-idx="${committedIndex}"][data-field="${field}"]`);
+      const committedInput = propertyId
+        ? lotModalTable.querySelector(`.lotField[data-idx="${committedIndex}"][data-property-id="${propertyId}"]`)
+        : lotModalTable.querySelector(`.lotField[data-idx="${committedIndex}"][data-field="${field}"]`);
       if (committedInput) committedInput.focus();
     }
     else setLotModalValidation(true);
@@ -565,7 +646,8 @@ lotModalTable.addEventListener("input", (e) => {
     return;
   }
   const idx = parseInt(e.target.dataset.idx, 10);
-  parsedRows[idx][e.target.dataset.field] = e.target.value;
+  if (e.target.dataset.propertyId) parsedRows[idx].customProperties[e.target.dataset.propertyId] = e.target.value;
+  else parsedRows[idx][e.target.dataset.field] = e.target.value;
   renderQuantityTable(); // code/name changes affect the quantity table's row labels
   setLotModalValidation(hasIncompleteLots());
   runFitCheck();

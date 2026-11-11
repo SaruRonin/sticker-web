@@ -107,6 +107,11 @@
 
 <div id="preview"></div>
 
+<label class="checkbox sheet-only" id="manualSheetQuantitiesWrap">
+  <input type="checkbox" id="manualSheetQuantities">
+  <span data-i18n="manualSheetQuantities">Choose sticker amounts manually</span>
+</label>
+
 <div id="quantitySection" style="display:none;">
   <h3 data-i18n="copiesPerLot">Copies per lot</h3>
   <div id="quantityTable"></div>
@@ -142,11 +147,13 @@
     <h2 id="lotModalTitle" data-i18n="editLotsTitle">Edit Lots</h2>
     <p id="lotModalDescription" style="color:var(--text-muted);font-size:0.85rem;margin-top:0;" data-i18n="editLotsHelp">Add, edit, or remove lots by hand - changes apply immediately.</p>
     <p id="lotModalValidation" class="modal-validation" role="alert" style="display:none;"></p>
+    <div id="customPropertyEditor" class="custom-property-editor"></div>
     <div class="modal-table-wrap">
       <table id="lotModalTable"></table>
     </div>
     <div class="modal-actions">
       <button type="button" id="addLotBtn" class="secondary" data-i18n="addLot">+ Add lot</button>
+      <button type="button" id="addPropertyBtn" class="secondary" data-i18n="addProperty">+ Add property</button>
       <button type="button" id="closeLotModalBtn" data-i18n="done">Done</button>
     </div>
   </div>

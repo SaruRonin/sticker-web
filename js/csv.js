@@ -19,10 +19,13 @@ const FIELD_ALIASES = {
 const TITLE_FIELDS = ["code", "name"];
 const PROPERTY_FIELDS = ["Country", "Region", "Variety", "Processing", "Producer", "Altitude"];
 const ALL_FIELDS = [...TITLE_FIELDS, ...PROPERTY_FIELDS];
+const customPropertyFields = [];
+let nextCustomPropertyNumber = 1;
 
 function emptyLot() {
   const lot = {};
   ALL_FIELDS.forEach((field) => { lot[field] = ""; });
+  lot.customProperties = {};
   return lot;
 }
 
@@ -104,6 +107,10 @@ function buildLines(row, titleSize, bodySize) {
     }
     if (!value) continue;
     lines.push({ text: `${label}: ${value}`, bold: false, size: bodySize });
+  }
+  for (const field of customPropertyFields) {
+    const value = cleanField(row.customProperties && row.customProperties[field.id]);
+    if (value) lines.push({ text: `${field.name}: ${value}`, bold: false, size: bodySize });
   }
   return lines;
 }
